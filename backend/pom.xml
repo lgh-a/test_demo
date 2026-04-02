@@ -55,6 +55,16 @@
       <artifactId>sa-token-spring-boot3-starter</artifactId>
       <version>1.37.0</version>
     </dependency>
+    <!-- Sa-Token Redis 整合（使用 jackson 序列化） -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-redis</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>cn.dev33</groupId>
+      <artifactId>sa-token-redis-jackson</artifactId>
+      <version>1.37.0</version>
+    </dependency>
   </dependencies>
 
   <build>
