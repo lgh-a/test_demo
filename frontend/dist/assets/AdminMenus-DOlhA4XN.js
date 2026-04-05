@@ -1,2 +1,0 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/MenuManager-BuP285V4.js","assets/index-VuBBeDuu.js","assets/vendor-DzlhsW8-.js","assets/ui-DTo9iCU4.js","assets/index-DMnx3CsW.css"])))=>i.map(i=>d[i]);
-import{_ as a}from"./index-VuBBeDuu.js";import{ay as o,aq as r,aO as n,ax as t}from"./vendor-DzlhsW8-.js";import"./ui-DTo9iCU4.js";const u={__name:"AdminMenus",setup(_){const e=n(()=>a(()=>import("./MenuManager-BuP285V4.js"),__vite__mapDeps([0,1,2,3,4])));return(s,c)=>(t(),o(r(e)))}};export{u as default};

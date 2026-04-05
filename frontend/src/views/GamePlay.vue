@@ -7,9 +7,9 @@
       </div>
       <div class="flex gap-2">
         <FavoriteButton v-if="game" :game-id="game.id" />
-        <n-button v-if="isPlaying" type="warning" ghost size="small" @click="stopEmulator">Stop</n-button>
-        <n-button v-else type="primary" size="small" @click="playGame">Play</n-button>
-        <n-button size="small" @click="$router.go(-1)">Back</n-button>
+        <n-button v-if="isPlaying" type="warning" ghost size="small" @click="stopEmulator">{{ t('game.stop') }}</n-button>
+        <n-button v-else type="primary" size="small" @click="playGame">{{ t('game.play') }}</n-button>
+        <n-button size="small" @click="$router.go(-1)">{{ t('common.back') }}</n-button>
       </div>
     </div>
 
@@ -44,9 +44,9 @@
       </div>
 
       <div class="mt-4 flex flex-col items-center gap-1 text-xs text-gray-400">
-        <p class="sm:hidden">Rotate to landscape if the controls do not fit on screen.</p>
+        <p class="sm:hidden">{{ t('game.rotateHint') }}</p>
         <p class="hidden sm:block">
-          Keyboard: Arrow keys to move, X for A, Z for B, Shift for Select, Enter for Start.
+          {{ t('game.keyboardHint') }}
         </p>
       </div>
     </div>
@@ -60,11 +60,13 @@ import { NButton, useMessage } from 'naive-ui'
 import { backendOrigin, request } from '../api/request'
 import { useAppStore } from '../store'
 import FavoriteButton from '../components/FavoriteButton.vue'
+import { useI18n } from '../i18n'
 
 const route = useRoute()
 const router = useRouter()
 const store = useAppStore()
 const message = useMessage()
+const { t } = useI18n()
 const game = ref(null)
 const isPlaying = ref(false)
 let emulatorInstance = null
@@ -84,7 +86,7 @@ const startEmulator = async (romPath, consoleName) => {
     isPlaying.value = true
   } catch (error) {
     console.error('Failed to start emulator', error)
-    message.error('Failed to start the emulator')
+    message.error(t('game.emulatorStartFailed'))
   }
 }
 
@@ -131,13 +133,13 @@ onMounted(async () => {
         await request(`/history/games/${route.params.id}`, { method: 'POST' })
         await Promise.all([store.fetchRecentHistory(), store.fetchFavoriteIds()])
       } catch (error) {
-        console.error('Failed to update user game state', error)
+        console.error(t('game.gameStateUpdateFailed'), error)
       }
     }
     playGame()
   } catch (error) {
     console.error('Failed to load game detail', error)
-    message.error(error.message || 'ROM file is missing or unavailable')
+    message.error(error.message || t('game.gameLoadFailed'))
     router.push('/')
   }
 })

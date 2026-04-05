@@ -2,40 +2,40 @@
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold">Game Library</h1>
-        <p class="mt-1 text-sm text-gray-400">Browse by console, series, keyword, and sort mode.</p>
+        <h1 class="text-2xl font-bold">{{ t('gameList.title') }}</h1>
+        <p class="mt-1 text-sm text-gray-400">{{ t('gameList.subtitle') }}</p>
       </div>
-      <n-button @click="$router.push('/')">Back Home</n-button>
+      <n-button @click="$router.push('/')">{{ t('common.backHome') }}</n-button>
     </div>
 
     <div class="flex flex-col gap-4 rounded-2xl border border-white/10 bg-[#23232a] p-4 md:flex-row md:items-end md:justify-between">
       <div class="grid flex-1 gap-4 md:grid-cols-3">
         <div>
-          <div class="mb-2 text-xs uppercase tracking-[0.28em] text-gray-400">Keyword</div>
-          <n-input v-model:value="keywordInput" placeholder="Search game name" @keyup.enter="applyFilters" />
+          <div class="mb-2 text-xs uppercase tracking-[0.28em] text-gray-400">{{ t('gameList.keyword') }}</div>
+          <n-input v-model:value="keywordInput" :placeholder="t('gameList.keywordPlaceholder')" @keyup.enter="applyFilters" />
         </div>
         <div>
-          <div class="mb-2 text-xs uppercase tracking-[0.28em] text-gray-400">Sort</div>
+          <div class="mb-2 text-xs uppercase tracking-[0.28em] text-gray-400">{{ t('gameList.sort') }}</div>
           <n-select v-model:value="sortValue" :options="sortOptions" />
         </div>
         <div>
-          <div class="mb-2 text-xs uppercase tracking-[0.28em] text-gray-400">Page Size</div>
+          <div class="mb-2 text-xs uppercase tracking-[0.28em] text-gray-400">{{ t('gameList.pageSize') }}</div>
           <n-select v-model:value="pageSize" :options="pageSizeOptions" />
         </div>
       </div>
       <div class="flex gap-2">
-        <n-button secondary @click="resetFilters">Reset</n-button>
-        <n-button type="primary" @click="applyFilters">Apply</n-button>
+        <n-button secondary @click="resetFilters">{{ t('common.reset') }}</n-button>
+        <n-button type="primary" @click="applyFilters">{{ t('common.apply') }}</n-button>
       </div>
     </div>
 
     <div class="flex items-center justify-between text-sm text-gray-400">
-      <span>Total games: {{ total }}</span>
-      <span>Page {{ current }}</span>
+      <span>{{ t('common.totalGames', { total }) }}</span>
+      <span>{{ t('common.page', { page: current }) }}</span>
     </div>
 
-    <div v-if="loading" class="py-10 text-center">Loading games...</div>
-    <div v-else-if="games.length === 0" class="py-10 text-center text-gray-400">No games matched the current filters.</div>
+    <div v-if="loading" class="py-10 text-center">{{ t('gameList.loading') }}</div>
+    <div v-else-if="games.length === 0" class="py-10 text-center text-gray-400">{{ t('gameList.empty') }}</div>
     <div v-else class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
       <GameCard v-for="game in games" :key="game.id" :game="game" />
     </div>
@@ -58,6 +58,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { NButton, NInput, NPagination, NSelect } from 'naive-ui'
 import { request } from '../api/request'
 import GameCard from '../components/GameCard.vue'
+import { useI18n } from '../i18n'
 
 const route = useRoute()
 const router = useRouter()
@@ -68,18 +69,19 @@ const pageSize = ref(24)
 const keywordInput = ref('')
 const sortValue = ref('latest')
 const loading = ref(false)
+const { t } = useI18n()
 
-const sortOptions = [
-  { label: 'Latest Added', value: 'latest' },
-  { label: 'Recently Updated', value: 'updated' },
-  { label: 'Name A-Z', value: 'name' }
-]
+const sortOptions = computed(() => [
+  { label: t('gameList.sortLatest'), value: 'latest' },
+  { label: t('gameList.sortUpdated'), value: 'updated' },
+  { label: t('gameList.sortName'), value: 'name' }
+])
 
-const pageSizeOptions = [
-  { label: '12 / page', value: 12 },
-  { label: '24 / page', value: 24 },
-  { label: '36 / page', value: 36 }
-]
+const pageSizeOptions = computed(() => [
+  { label: t('gameList.perPage', { count: 12 }), value: 12 },
+  { label: t('gameList.perPage', { count: 24 }), value: 24 },
+  { label: t('gameList.perPage', { count: 36 }), value: 36 }
+])
 
 const pageCount = computed(() => Math.max(1, Math.ceil(total.value / pageSize.value)))
 

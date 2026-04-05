@@ -3,7 +3,6 @@ import './index.css'
 import App from './App.vue'
 import router from './router'
 import { pinia } from './store/pinia'
-
 import { authDirective } from './directives/auth'
 
 const app = createApp(App)

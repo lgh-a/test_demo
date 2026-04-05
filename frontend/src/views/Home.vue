@@ -1,24 +1,24 @@
 <template>
   <div class="space-y-8">
     <div class="flex flex-col items-center justify-center py-12">
-      <h1 class="mb-6 text-4xl font-bold">Retro Games, Ready to Play</h1>
+      <h1 class="mb-6 text-4xl font-bold">{{ t('home.heroTitle') }}</h1>
       <n-input
         v-model:value="searchKeyword"
         class="max-w-xl w-full"
         size="large"
-        placeholder="Search games, for example Mario"
+        :placeholder="t('home.searchPlaceholder')"
         round
         clearable
         @keyup.enter="handleSearch"
       >
         <template #prefix>
-          <span>Search</span>
+          <span>{{ t('home.searchPrefix') }}</span>
         </template>
       </n-input>
     </div>
 
     <div>
-      <h2 class="mb-4 text-2xl font-bold">Consoles</h2>
+      <h2 class="mb-4 text-2xl font-bold">{{ t('home.consoles') }}</h2>
       <div class="flex gap-4 overflow-x-auto pb-4">
         <div
           v-for="consoleItem in consoles"
@@ -33,7 +33,7 @@
     </div>
 
     <div>
-      <h2 class="mb-4 text-2xl font-bold">Series</h2>
+      <h2 class="mb-4 text-2xl font-bold">{{ t('home.series') }}</h2>
       <div class="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-6">
         <div
           v-for="seriesItem in series"
@@ -48,8 +48,8 @@
 
     <div v-if="featuredGames.length > 0">
       <div class="mb-4 flex items-center justify-between">
-        <h2 class="text-2xl font-bold">Recommended to Play</h2>
-        <n-button quaternary size="small" @click="$router.push('/games?sort=updated')">Browse more</n-button>
+        <h2 class="text-2xl font-bold">{{ t('home.recommended') }}</h2>
+        <n-button quaternary size="small" @click="$router.push('/games?sort=updated')">{{ t('home.browseMore') }}</n-button>
       </div>
       <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         <GameCard v-for="game in featuredGames" :key="`featured-${game.id}`" :game="game" />
@@ -58,8 +58,8 @@
 
     <div v-if="latestGames.length > 0">
       <div class="mb-4 flex items-center justify-between">
-        <h2 class="text-2xl font-bold">Latest Added</h2>
-        <n-button quaternary size="small" @click="$router.push('/games?sort=latest')">Browse more</n-button>
+        <h2 class="text-2xl font-bold">{{ t('home.latestAdded') }}</h2>
+        <n-button quaternary size="small" @click="$router.push('/games?sort=latest')">{{ t('home.browseMore') }}</n-button>
       </div>
       <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         <GameCard v-for="game in latestGames" :key="`latest-${game.id}`" :game="game" />
@@ -68,8 +68,8 @@
 
     <div v-if="store.isLoggedIn && favoriteGames.length > 0">
       <div class="mb-4 flex items-center justify-between">
-        <h2 class="text-2xl font-bold">My Favorites</h2>
-        <n-button quaternary size="small" @click="$router.push('/favorites')">View all</n-button>
+        <h2 class="text-2xl font-bold">{{ t('home.myFavorites') }}</h2>
+        <n-button quaternary size="small" @click="$router.push('/favorites')">{{ t('home.viewAll') }}</n-button>
       </div>
       <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         <GameCard v-for="game in favoriteGames.slice(0, 6)" :key="`favorite-${game.id}`" :game="game" />
@@ -78,8 +78,8 @@
 
     <div v-if="store.isLoggedIn && recentHistory.length > 0">
       <div class="mb-4 flex items-center justify-between">
-        <h2 class="text-2xl font-bold">Recently Played</h2>
-        <n-button quaternary size="small" @click="refreshRecentHistory">Refresh</n-button>
+        <h2 class="text-2xl font-bold">{{ t('home.recentlyPlayed') }}</h2>
+        <n-button quaternary size="small" @click="refreshRecentHistory">{{ t('common.refresh') }}</n-button>
       </div>
       <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         <GameCard v-for="game in recentHistory" :key="`history-${game.id}`" :game="game" />
@@ -95,9 +95,11 @@ import { NButton, NInput } from 'naive-ui'
 import { request } from '../api/request'
 import { useAppStore } from '../store'
 import GameCard from '../components/GameCard.vue'
+import { useI18n } from '../i18n'
 
 const router = useRouter()
 const store = useAppStore()
+const { t } = useI18n()
 const searchKeyword = ref('')
 const consoles = ref([])
 const series = ref([])

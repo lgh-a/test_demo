@@ -2,10 +2,10 @@
   <div class="space-y-4">
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="text-xl font-bold text-white">Overview</h2>
-        <p class="text-sm text-gray-400">Current backend management summary</p>
+        <h2 class="text-xl font-bold text-white">{{ t('admin.overview') }}</h2>
+        <p class="text-sm text-gray-400">{{ t('admin.overviewSubtitle') }}</p>
       </div>
-      <n-button size="small" :loading="loading" @click="loadOverview">Refresh</n-button>
+      <n-button size="small" :loading="loading" @click="loadOverview">{{ t('common.refresh') }}</n-button>
     </div>
 
     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
@@ -25,8 +25,10 @@
 import { computed, onMounted, ref } from 'vue'
 import { NButton } from 'naive-ui'
 import { request } from '../api/request'
+import { useI18n } from '../i18n'
 
 const loading = ref(false)
+const { t } = useI18n()
 const overview = ref({
   totalUsers: 0,
   enabledUsers: 0,
@@ -36,11 +38,11 @@ const overview = ref({
 })
 
 const cards = computed(() => [
-  { key: 'totalUsers', label: 'Total Users', value: overview.value.totalUsers },
-  { key: 'enabledUsers', label: 'Enabled Users', value: overview.value.enabledUsers },
-  { key: 'totalRoles', label: 'Roles', value: overview.value.totalRoles },
-  { key: 'totalMenus', label: 'Menus', value: overview.value.totalMenus },
-  { key: 'activeRateLimitRules', label: 'Active Rules', value: overview.value.activeRateLimitRules }
+  { key: 'totalUsers', label: t('admin.totalUsers'), value: overview.value.totalUsers },
+  { key: 'enabledUsers', label: t('admin.enabledUsers'), value: overview.value.enabledUsers },
+  { key: 'totalRoles', label: t('admin.totalRoles'), value: overview.value.totalRoles },
+  { key: 'totalMenus', label: t('admin.totalMenus'), value: overview.value.totalMenus },
+  { key: 'activeRateLimitRules', label: t('admin.activeRules'), value: overview.value.activeRateLimitRules }
 ])
 
 const loadOverview = async () => {

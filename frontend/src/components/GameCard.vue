@@ -4,7 +4,7 @@
   >
     <div class="relative h-32 bg-gray-800 cursor-pointer" @click="goPlay">
       <img v-if="game.thumbUrl" :src="baseHost + game.thumbUrl" class="h-full w-full object-cover" />
-      <div v-else class="flex h-full w-full items-center justify-center text-gray-500">No image</div>
+      <div v-else class="flex h-full w-full items-center justify-center text-gray-500">{{ t('game.noImage') }}</div>
       <div class="absolute right-2 top-2 flex gap-1">
         <n-tag size="small" type="info">{{ game.language }}</n-tag>
       </div>
@@ -16,7 +16,7 @@
           class="rounded-md bg-white/10 px-3 py-1 text-xs text-white transition-colors hover:bg-white/20"
           @click="goPlay"
         >
-          Play
+          {{ t('game.play') }}
         </button>
         <FavoriteButton :game-id="game.id" />
       </div>
@@ -29,6 +29,7 @@ import { useRouter } from 'vue-router'
 import { NTag } from 'naive-ui'
 import { backendOrigin } from '../api/request'
 import FavoriteButton from './FavoriteButton.vue'
+import { useI18n } from '../i18n'
 
 const props = defineProps({
   game: {
@@ -39,6 +40,7 @@ const props = defineProps({
 
 const router = useRouter()
 const baseHost = backendOrigin
+const { t } = useI18n()
 
 const goPlay = () => {
   router.push(`/play/${props.game.id}`)

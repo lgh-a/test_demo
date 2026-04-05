@@ -6,7 +6,7 @@
       : 'border-white/15 bg-black/35 text-white/80 hover:border-white/30 hover:text-white'"
     @click.stop="handleToggle"
   >
-    {{ favorite ? 'Favorited' : 'Favorite' }}
+    {{ favorite ? t('game.favorited') : t('game.favorite') }}
   </button>
 </template>
 
@@ -15,6 +15,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useMessage } from 'naive-ui'
 import { useAppStore } from '../store'
+import { useI18n } from '../i18n'
 
 const props = defineProps({
   gameId: {
@@ -26,20 +27,21 @@ const props = defineProps({
 const store = useAppStore()
 const router = useRouter()
 const message = useMessage()
+const { t } = useI18n()
 const favorite = computed(() => store.favoriteIds.includes(props.gameId))
 
 const handleToggle = async () => {
   if (!store.isLoggedIn) {
-    message.warning('Please log in first')
+    message.warning(t('game.favoriteLoginFirst'))
     await router.push({ path: '/', query: { login: '1', redirect: router.currentRoute.value.fullPath } })
     return
   }
 
   try {
     const nextState = await store.toggleFavorite(props.gameId)
-    message.success(nextState ? 'Added to favorites' : 'Removed from favorites')
+    message.success(nextState ? t('game.favoriteAdded') : t('game.favoriteRemoved'))
   } catch (error) {
-    message.error(error.message || 'Favorite update failed')
+    message.error(error.message || t('game.favoriteUpdateFailed'))
   }
 }
 </script>
