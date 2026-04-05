@@ -1,0 +1,2 @@
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/RoleManager-BaijUDo8.js","assets/index-VuBBeDuu.js","assets/vendor-DzlhsW8-.js","assets/ui-DTo9iCU4.js","assets/index-DMnx3CsW.css"])))=>i.map(i=>d[i]);
+import{_ as o}from"./index-VuBBeDuu.js";import{ay as a,aq as r,aO as t,ax as _}from"./vendor-DzlhsW8-.js";import"./ui-DTo9iCU4.js";const f={__name:"AdminRoles",setup(n){const e=t(()=>o(()=>import("./RoleManager-BaijUDo8.js"),__vite__mapDeps([0,1,2,3,4])));return(s,c)=>(_(),a(r(e)))}};export{f as default};

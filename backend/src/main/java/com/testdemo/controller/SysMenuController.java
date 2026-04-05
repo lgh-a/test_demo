@@ -1,66 +1,95 @@
 package com.testdemo.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import com.testdemo.common.OperationResult;
 import com.testdemo.common.Result;
-import com.testdemo.entity.SysMenu;
-import com.testdemo.mapper.SysMenuMapper;
+import com.testdemo.common.exception.BusinessException;
+import com.testdemo.dto.MenuSaveRequest;
+import com.testdemo.service.SysMenuService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/menus")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
-@Tag(name = "菜单管理", description = "系统菜单CRUD操作，需要相应权限")
+@Validated
+@Tag(name = "Menus", description = "System menu management")
 public class SysMenuController {
 
-    private final SysMenuMapper sysMenuMapper;
+    private final SysMenuService sysMenuService;
 
     @GetMapping("/list")
     @SaCheckPermission("sys:menu:list")
-    @Operation(summary = "获取菜单列表", description = "查询所有系统菜单，需要sys:menu:list权限")
-    @ApiResponse(responseCode = "200", description = "获取成功")
-    @ApiResponse(responseCode = "401", description = "未登录")
-    @ApiResponse(responseCode = "403", description = "无sys:menu:list权限")
+    @Operation(summary = "Get menu list", description = "Query all menus in flat structure")
+    @ApiResponse(responseCode = "200", description = "Query successful")
+    @ApiResponse(responseCode = "401", description = "Not logged in")
+    @ApiResponse(responseCode = "403", description = "Missing sys:menu:list permission")
     public Result<?> list() {
-        return Result.success(sysMenuMapper.selectList(null));
+        return Result.success(sysMenuService.listMenus());
+    }
+
+    @GetMapping("/tree")
+    @SaCheckPermission("sys:menu:list")
+    @Operation(summary = "Get menu tree", description = "Query all menus in tree structure")
+    @ApiResponse(responseCode = "200", description = "Query successful")
+    public Result<?> tree() {
+        return Result.success(sysMenuService.treeMenus());
     }
 
     @PostMapping("/add")
     @SaCheckPermission("sys:menu:add")
-    @Operation(summary = "添加菜单", description = "新增系统菜单，需要sys:menu:add权限")
-    @ApiResponse(responseCode = "200", description = "添加成功")
-    @ApiResponse(responseCode = "401", description = "未登录")
-    @ApiResponse(responseCode = "403", description = "无sys:menu:add权限")
-    public Result<?> add(@RequestBody SysMenu menu) {
-        sysMenuMapper.insert(menu);
+    @Operation(summary = "Create menu", description = "Create a new menu")
+    @ApiResponse(responseCode = "200", description = "Create successful")
+    @ApiResponse(responseCode = "401", description = "Not logged in")
+    @ApiResponse(responseCode = "403", description = "Missing sys:menu:add permission")
+    public Result<?> add(@Valid @RequestBody MenuSaveRequest request) {
+        OperationResult<Void> result = sysMenuService.createMenu(request);
+        ensureSuccess(result);
         return Result.success("Menu added successfully");
     }
 
     @PutMapping("/{id}")
     @SaCheckPermission("sys:menu:update")
-    @Operation(summary = "更新菜单", description = "根据ID更新菜单信息，需要sys:menu:update权限")
-    @ApiResponse(responseCode = "200", description = "更新成功")
-    @ApiResponse(responseCode = "401", description = "未登录")
-    @ApiResponse(responseCode = "403", description = "无sys:menu:update权限")
-    public Result<?> update(@Parameter(description = "菜单ID") @PathVariable Integer id, @RequestBody SysMenu menu) {
-        menu.setId(id);
-        sysMenuMapper.updateById(menu);
+    @Operation(summary = "Update menu", description = "Update menu by ID")
+    @ApiResponse(responseCode = "200", description = "Update successful")
+    @ApiResponse(responseCode = "401", description = "Not logged in")
+    @ApiResponse(responseCode = "403", description = "Missing sys:menu:update permission")
+    public Result<?> update(@Parameter(description = "Menu ID") @PathVariable Integer id,
+                            @Valid @RequestBody MenuSaveRequest request) {
+        OperationResult<Void> result = sysMenuService.updateMenu(id, request);
+        ensureSuccess(result);
         return Result.success("Menu updated successfully");
     }
 
     @DeleteMapping("/{id}")
     @SaCheckPermission("sys:menu:delete")
-    @Operation(summary = "删除菜单", description = "根据ID删除菜单，需要sys:menu:delete权限")
-    @ApiResponse(responseCode = "200", description = "删除成功")
-    @ApiResponse(responseCode = "401", description = "未登录")
-    @ApiResponse(responseCode = "403", description = "无sys:menu:delete权限")
-    public Result<?> delete(@Parameter(description = "菜单ID") @PathVariable Integer id) {
-        sysMenuMapper.deleteById(id);
+    @Operation(summary = "Delete menu", description = "Delete menu by ID")
+    @ApiResponse(responseCode = "200", description = "Delete successful")
+    @ApiResponse(responseCode = "401", description = "Not logged in")
+    @ApiResponse(responseCode = "403", description = "Missing sys:menu:delete permission")
+    public Result<?> delete(@Parameter(description = "Menu ID") @PathVariable Integer id) {
+        OperationResult<Void> result = sysMenuService.deleteMenu(id);
+        ensureSuccess(result);
         return Result.success("Menu deleted successfully");
+    }
+
+    private void ensureSuccess(OperationResult<?> result) {
+        if (!result.isSuccess()) {
+            throw new BusinessException(HttpStatus.valueOf(result.getCode()), result.getCode(), result.getMessage());
+        }
     }
 }

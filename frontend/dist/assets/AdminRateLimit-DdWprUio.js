@@ -1,0 +1,2 @@
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/RateLimitRuleManager-DyAD7ADJ.js","assets/index-VuBBeDuu.js","assets/vendor-DzlhsW8-.js","assets/ui-DTo9iCU4.js","assets/index-DMnx3CsW.css"])))=>i.map(i=>d[i]);
+import{_ as a}from"./index-VuBBeDuu.js";import{ay as t,aq as o,aO as r,ax as _}from"./vendor-DzlhsW8-.js";import"./ui-DTo9iCU4.js";const u={__name:"AdminRateLimit",setup(n){const e=r(()=>a(()=>import("./RateLimitRuleManager-DyAD7ADJ.js"),__vite__mapDeps([0,1,2,3,4])));return(i,m)=>(_(),t(o(e)))}};export{u as default};

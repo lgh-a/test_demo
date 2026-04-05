@@ -8,6 +8,8 @@ import com.testdemo.entity.RateLimitRule;
 import com.testdemo.mapper.RateLimitRuleMapper;
 import com.testdemo.service.RateLimitRuleService;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -16,6 +18,8 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class RateLimitRuleServiceImpl implements RateLimitRuleService {
+    private static final Logger log = LoggerFactory.getLogger(RateLimitRuleServiceImpl.class);
+
     private final RateLimitRuleMapper rateLimitRuleMapper;
     private final RateLimitRuleManager rateLimitRuleManager;
 
@@ -44,16 +48,29 @@ public class RateLimitRuleServiceImpl implements RateLimitRuleService {
     public boolean addRule(RateLimitRule rule) {
         int rows = rateLimitRuleMapper.insert(rule);
         if (rows > 0) {
-            rateLimitRuleManager.refreshCache(rule);
+            syncRuleCache(rule, null);
+            log.info("Created rate limit rule: ruleId={}, configKey={}, status={}",
+                    rule.getId(), rule.getConfigKey(), rule.getStatus());
+        } else {
+            log.warn("Failed to create rate limit rule: configKey={}", rule.getConfigKey());
         }
         return rows > 0;
     }
 
     @Override
     public boolean updateRule(RateLimitRule rule) {
+        RateLimitRule existingRule = rateLimitRuleMapper.selectById(rule.getId());
+        if (existingRule == null) {
+            log.warn("Rejected rate limit rule update because rule was not found: ruleId={}", rule.getId());
+            return false;
+        }
         int rows = rateLimitRuleMapper.updateById(rule);
         if (rows > 0) {
-            rateLimitRuleManager.refreshCache(rule);
+            syncRuleCache(rule, existingRule.getConfigKey());
+            log.info("Updated rate limit rule: ruleId={}, configKey={}, previousConfigKey={}, status={}",
+                    rule.getId(), rule.getConfigKey(), existingRule.getConfigKey(), rule.getStatus());
+        } else {
+            log.warn("Failed to update rate limit rule: ruleId={}, configKey={}", rule.getId(), rule.getConfigKey());
         }
         return rows > 0;
     }
@@ -63,6 +80,9 @@ public class RateLimitRuleServiceImpl implements RateLimitRuleService {
         RateLimitRule rule = rateLimitRuleMapper.selectById(id);
         if (rule != null) {
             rateLimitRuleManager.clearCache(rule.getConfigKey());
+            log.info("Deleting rate limit rule: ruleId={}, configKey={}", id, rule.getConfigKey());
+        } else {
+            log.warn("Rejected rate limit rule deletion because rule was not found: ruleId={}", id);
         }
         return rateLimitRuleMapper.deleteById(id) > 0;
     }
@@ -77,5 +97,16 @@ public class RateLimitRuleServiceImpl implements RateLimitRuleService {
         LambdaQueryWrapper<RateLimitRule> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(RateLimitRule::getStatus, 1);
         return rateLimitRuleMapper.selectList(queryWrapper);
+    }
+
+    private void syncRuleCache(RateLimitRule rule, String previousConfigKey) {
+        if (StringUtils.hasText(previousConfigKey) && !previousConfigKey.equals(rule.getConfigKey())) {
+            rateLimitRuleManager.clearCache(previousConfigKey);
+        }
+        if (rule.getStatus() != null && rule.getStatus() == 1) {
+            rateLimitRuleManager.refreshCache(rule);
+        } else {
+            rateLimitRuleManager.clearCache(rule.getConfigKey());
+        }
     }
 }

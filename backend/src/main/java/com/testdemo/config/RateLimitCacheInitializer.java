@@ -14,6 +14,7 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 public class RateLimitCacheInitializer implements ApplicationRunner {
+
     private static final Logger log = LoggerFactory.getLogger(RateLimitCacheInitializer.class);
 
     private final RateLimitRuleService rateLimitRuleService;
@@ -21,13 +22,13 @@ public class RateLimitCacheInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        log.info("开始初始化限流规则缓存...");
+        log.info("Initializing rate limit rule cache");
         try {
             List<RateLimitRule> rules = rateLimitRuleService.listEnabled();
             rateLimitRuleManager.refreshAllCache(rules);
-            log.info("限流规则缓存初始化完成，共加载 {} 条规则", rules.size());
+            log.info("Rate limit rule cache initialized with {} enabled rules", rules.size());
         } catch (Exception e) {
-            log.error("限流规则缓存初始化失败", e);
+            log.error("Failed to initialize rate limit rule cache", e);
         }
     }
 }

@@ -3,6 +3,7 @@ package com.testdemo.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import java.time.LocalDateTime;
@@ -19,6 +20,7 @@ public class SysUser {
     private String username;
 
     @Schema(description = "密码", accessMode = Schema.AccessMode.WRITE_ONLY)
+    @JsonIgnore
     private String password;
 
     @Schema(description = "状态，1启用0禁用")

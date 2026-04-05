@@ -1,20 +1,25 @@
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
 
 spring:
+  application:
+    name: backend
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
   datasource:
-    url: jdbc:mysql://192.168.142.33:3306/zaixianwan?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true&verifyServerCertificate=false&useSSL=false
-    # You may need to change the root password based on your local MySQL setup
-    username: root
-    password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${DB_URL:jdbc:mysql://localhost:3306/zaixianwan?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true&verifyServerCertificate=false&useSSL=false}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
+
   data:
     redis:
-      # Change Redis host, password, and database index for the target environment
-      host: 192.168.142.33
-      port: 6379
-      database: 0
-      timeout: 5s
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:0}
+      timeout: ${REDIS_TIMEOUT:5s}
 
 sa-token:
   token-name: satoken
@@ -23,7 +28,7 @@ sa-token:
   is-concurrent: true
   is-share: true
   token-style: uuid
-  is-log: true
+  is-log: ${SA_TOKEN_LOG:true}
 
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
@@ -31,9 +36,25 @@ mybatis-plus:
     db-config:
       id-type: auto
   configuration:
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
     map-underscore-to-camel-case: true
 
 
 knife4j:
-  enable: true
+  enable: ${KNIFE4J_ENABLE:true}
+
+logging:
+  file:
+    path: ${LOG_PATH:${user.dir}/logs}
+  level:
+    root: ${LOG_LEVEL_ROOT:INFO}
+
+app:
+  storage:
+    roms-path: ${ROMS_PATH:}
+    thumbs-path: ${THUMBS_PATH:}
+  security:
+    cors:
+      allow-credentials: ${CORS_ALLOW_CREDENTIALS:true}
+      allowed-origins:
+        - ${CORS_ALLOWED_ORIGIN_1:http://localhost:5173}
+        - ${CORS_ALLOWED_ORIGIN_2:http://127.0.0.1:5173}

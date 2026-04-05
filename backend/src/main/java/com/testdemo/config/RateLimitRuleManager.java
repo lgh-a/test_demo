@@ -10,18 +10,17 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
- * 动态限流规则管理器
- * 基于 Redis Hash 结构存储限流规则，支持规则的动态热更新
- * 规则存储在 sys:rate_limit:rules Hash 中，field 为 configKey，value 为 RateLimitRule JSON
+ * Manages dynamic rate-limit rules stored in Redis.
  */
 @Component
 public class RateLimitRuleManager {
 
     private static final Logger log = LoggerFactory.getLogger(RateLimitRuleManager.class);
 
-    /** Redis Hash 键，存储所有动态限流规则 */
+    /** Redis hash key containing all dynamic rate-limit rules. */
     private static final String RULE_HASH_KEY = "sys:rate_limit:rules";
 
     private final StringRedisTemplate stringRedisTemplate;
@@ -33,41 +32,40 @@ public class RateLimitRuleManager {
     }
 
     /**
-     * 获取动态限流规则
-     * @param configKey 规则配置键
-     * @return 规则对象，若不存在或异常返回 null
+     * Returns a dynamic rate-limit rule by config key, or null when missing.
      */
     public RateLimitRule getRule(String configKey) {
-        if (!StringUtils.hasText(configKey)) return null;
+        if (!StringUtils.hasText(configKey)) {
+            return null;
+        }
         try {
             Object ruleJson = stringRedisTemplate.opsForHash().get(RULE_HASH_KEY, configKey);
             if (ruleJson != null) {
                 return objectMapper.readValue(ruleJson.toString(), RateLimitRule.class);
             }
         } catch (Exception e) {
-            log.error("获取动态限流规则异常, configKey: {}", configKey, e);
+            log.error("Failed to load rate limit rule from cache: configKey={}", configKey, e);
         }
         return null;
     }
 
     /**
-     * 保存限流规则（不重置计数）
-     * 内部调用 saveRule(configKey, capacity, rate, false)
+     * Saves a rule without resetting its counters.
      */
     public void saveRule(String configKey, Integer capacity, Integer rate) {
         saveRule(configKey, capacity, rate, false);
     }
 
     /**
-     * 保存限流规则，支持选择是否重置计数空间
+     * Saves a rule and optionally resets its counter namespace.
      */
     public void saveRule(String configKey, Integer capacity, Integer rate, boolean reset) {
         try {
             RateLimitRule existingRule = getRule(configKey);
             Integer newVersion = 1;
             if (existingRule != null) {
-                boolean capacityChanged = !java.util.Objects.equals(existingRule.getCapacity(), capacity);
-                boolean rateChanged = !java.util.Objects.equals(existingRule.getRate(), rate);
+                boolean capacityChanged = !Objects.equals(existingRule.getCapacity(), capacity);
+                boolean rateChanged = !Objects.equals(existingRule.getRate(), rate);
                 if (capacityChanged || rateChanged || reset) {
                     if (reset) {
                         newVersion = (existingRule.getVersion() != null ? existingRule.getVersion() : 1) + 1;
@@ -78,60 +76,69 @@ public class RateLimitRuleManager {
                     newVersion = existingRule.getVersion() != null ? existingRule.getVersion() : 1;
                 }
             }
+
             RateLimitRule rule = new RateLimitRule();
             rule.setCapacity(capacity);
             rule.setRate(rate);
             rule.setVersion(newVersion);
+
             String ruleJson = objectMapper.writeValueAsString(rule);
             stringRedisTemplate.opsForHash().put(RULE_HASH_KEY, configKey, ruleJson);
-            log.info("动态限流规则已更新 -> configKey: {}, rule: {}, reset: {}", configKey, ruleJson, reset);
+            log.info("Updated dynamic rate limit rule: configKey={}, reset={}, rule={}", configKey, reset, ruleJson);
         } catch (JsonProcessingException e) {
-            log.error("序列化限流规则失败", e);
+            log.error("Failed to serialize rate limit rule", e);
         }
     }
 
     /**
-     * 刷新单条规则到缓存
+     * Refreshes a single rule in cache.
      */
     public void refreshCache(RateLimitRule rule) {
-        if (rule == null || !StringUtils.hasText(rule.getConfigKey())) return;
+        if (rule == null || !StringUtils.hasText(rule.getConfigKey())) {
+            return;
+        }
         try {
             String ruleJson = objectMapper.writeValueAsString(rule);
             stringRedisTemplate.opsForHash().put(RULE_HASH_KEY, rule.getConfigKey(), ruleJson);
-            log.info("刷新限流规则到缓存 -> configKey: {}, rule: {}", rule.getConfigKey(), ruleJson);
+            log.info("Refreshed rate limit rule cache: configKey={}, rule={}", rule.getConfigKey(), ruleJson);
         } catch (JsonProcessingException e) {
-            log.error("序列化限流规则失败", e);
+            log.error("Failed to serialize rate limit rule", e);
         }
     }
 
     /**
-     * 刷新所有规则到缓存
+     * Refreshes all enabled rules in cache.
      */
     public void refreshAllCache(List<RateLimitRule> rules) {
         if (rules == null || rules.isEmpty()) {
-            log.info("没有启用的限流规则需要刷新");
+            log.info("No enabled rate limit rules to refresh");
             return;
         }
-        stringRedisTemplate.opsForHash().delete(RULE_HASH_KEY, rules.stream()
-                .map(RateLimitRule::getConfigKey)
-                .toArray());
+
+        stringRedisTemplate.opsForHash().delete(
+                RULE_HASH_KEY,
+                rules.stream().map(RateLimitRule::getConfigKey).toArray()
+        );
+
         for (RateLimitRule rule : rules) {
             try {
                 String ruleJson = objectMapper.writeValueAsString(rule);
                 stringRedisTemplate.opsForHash().put(RULE_HASH_KEY, rule.getConfigKey(), ruleJson);
             } catch (JsonProcessingException e) {
-                log.error("序列化限流规则失败, configKey: {}", rule.getConfigKey(), e);
+                log.error("Failed to serialize rate limit rule: configKey={}", rule.getConfigKey(), e);
             }
         }
-        log.info("已刷新 {} 条限流规则到缓存", rules.size());
+        log.info("Refreshed {} enabled rate limit rules into cache", rules.size());
     }
 
     /**
-     * 清除指定规则的缓存
+     * Clears one rule from cache.
      */
     public void clearCache(String configKey) {
-        if (!StringUtils.hasText(configKey)) return;
+        if (!StringUtils.hasText(configKey)) {
+            return;
+        }
         stringRedisTemplate.opsForHash().delete(RULE_HASH_KEY, configKey);
-        log.info("已清除限流规则缓存 -> configKey: {}", configKey);
+        log.info("Cleared rate limit rule cache: configKey={}", configKey);
     }
 }

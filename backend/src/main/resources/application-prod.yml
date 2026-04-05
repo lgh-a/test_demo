@@ -1,0 +1,20 @@
+sa-token:
+  is-log: false
+
+mybatis-plus:
+  configuration:
+    log-impl:
+
+knife4j:
+  enable: false
+
+app:
+  security:
+    cors:
+      allowed-origins: []
+
+logging:
+  level:
+    com.testdemo: INFO
+    org.mybatis: WARN
+    com.baomidou.mybatisplus: WARN
