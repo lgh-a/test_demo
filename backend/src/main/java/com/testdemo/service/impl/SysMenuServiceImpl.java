@@ -3,9 +3,11 @@ package com.testdemo.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.testdemo.common.OperationResult;
 import com.testdemo.dto.MenuSaveRequest;
 import com.testdemo.entity.SysMenu;
+import com.testdemo.entity.SysRoleMenu;
 import com.testdemo.mapper.SysMenuMapper;
 import com.testdemo.mapper.SysRoleMenuMapper;
 import com.testdemo.service.AuthorizationCacheService;
@@ -25,7 +27,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class SysMenuServiceImpl implements SysMenuService {
+public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> implements SysMenuService {
 
     private static final Logger log = LoggerFactory.getLogger(SysMenuServiceImpl.class);
 
@@ -172,7 +174,7 @@ public class SysMenuServiceImpl implements SysMenuService {
     private List<Integer> getRoleIdsByMenuId(Integer menuId) {
         return sysRoleMenuMapper.selectByMenuId(menuId)
                 .stream()
-                .map(com.testdemo.entity.SysRoleMenu::getRoleId)
+                .map(SysRoleMenu::getRoleId)
                 .distinct()
                 .toList();
     }

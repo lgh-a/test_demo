@@ -1,30 +1,31 @@
 package com.testdemo.mapper;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.testdemo.entity.SysRoleMenu;
-import org.apache.ibatis.annotations.Delete;
-import org.apache.ibatis.annotations.Insert;
-import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
+public interface SysRoleMenuMapper extends BaseMapper<SysRoleMenu> {
 
-import java.util.List;
+    default java.util.List<SysRoleMenu> selectAll() {
+        return selectList(null);
+    }
 
-public interface SysRoleMenuMapper {
+    default java.util.List<SysRoleMenu> selectByRoleId(Integer roleId) {
+        return selectList(new LambdaQueryWrapper<SysRoleMenu>().eq(SysRoleMenu::getRoleId, roleId));
+    }
 
-    @Select("SELECT role_id, menu_id FROM sys_role_menu")
-    List<SysRoleMenu> selectAll();
+    default java.util.List<SysRoleMenu> selectByMenuId(Integer menuId) {
+        return selectList(new LambdaQueryWrapper<SysRoleMenu>().eq(SysRoleMenu::getMenuId, menuId));
+    }
 
-    @Select("SELECT role_id, menu_id FROM sys_role_menu WHERE role_id = #{roleId}")
-    List<SysRoleMenu> selectByRoleId(@Param("roleId") Integer roleId);
+    default int insertRelation(SysRoleMenu relation) {
+        return insert(relation);
+    }
 
-    @Select("SELECT role_id, menu_id FROM sys_role_menu WHERE menu_id = #{menuId}")
-    List<SysRoleMenu> selectByMenuId(@Param("menuId") Integer menuId);
+    default int deleteByRoleId(Integer roleId) {
+        return delete(new LambdaQueryWrapper<SysRoleMenu>().eq(SysRoleMenu::getRoleId, roleId));
+    }
 
-    @Insert("INSERT INTO sys_role_menu(role_id, menu_id) VALUES(#{roleId}, #{menuId})")
-    int insertRelation(SysRoleMenu relation);
-
-    @Delete("DELETE FROM sys_role_menu WHERE role_id = #{roleId}")
-    int deleteByRoleId(@Param("roleId") Integer roleId);
-
-    @Delete("DELETE FROM sys_role_menu WHERE menu_id = #{menuId}")
-    int deleteByMenuId(@Param("menuId") Integer menuId);
+    default int deleteByMenuId(Integer menuId) {
+        return delete(new LambdaQueryWrapper<SysRoleMenu>().eq(SysRoleMenu::getMenuId, menuId));
+    }
 }

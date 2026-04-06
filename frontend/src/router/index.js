@@ -12,7 +12,8 @@ const AdminRoles = () => import('../views/AdminRoles.vue')
 const AdminMenus = () => import('../views/AdminMenus.vue')
 const AdminRateLimit = () => import('../views/AdminRateLimit.vue')
 const AdminGames = () => import('../views/AdminGames.vue')
-const AdminCategories = () => import('../views/AdminCategories.vue')
+const AdminConsoles = () => import('../views/AdminConsoles.vue')
+const AdminSeries = () => import('../views/AdminSeries.vue')
 const Forbidden = () => import('../views/Forbidden.vue')
 const NotFound = () => import('../views/NotFound.vue')
 
@@ -47,6 +48,24 @@ const router = createRouter({
             }
         },
         {
+            path: '/admin/categories',
+            name: 'AdminCategoriesLegacy',
+            redirect: () => {
+                const store = useAppStore(pinia)
+                if (store.hasPerm('console:manage:list')) {
+                    return '/admin/consoles'
+                }
+                if (store.hasPerm('series:manage:list')) {
+                    return '/admin/series'
+                }
+                return '/403'
+            },
+            meta: {
+                requiresAuth: true,
+                requiredPermissions: ['console:manage:list', 'series:manage:list']
+            }
+        },
+        {
             path: '/admin',
             name: 'Admin',
             component: Admin,
@@ -73,12 +92,21 @@ const router = createRouter({
                     }
                 },
                 {
-                    path: 'categories',
-                    name: 'AdminCategories',
-                    component: AdminCategories,
+                    path: 'consoles',
+                    name: 'AdminConsoles',
+                    component: AdminConsoles,
                     meta: {
                         requiresAuth: true,
-                        requiredPermissions: ['console:manage:list', 'series:manage:list']
+                        requiredPermissions: ['console:manage:list']
+                    }
+                },
+                {
+                    path: 'series',
+                    name: 'AdminSeries',
+                    component: AdminSeries,
+                    meta: {
+                        requiresAuth: true,
+                        requiredPermissions: ['series:manage:list']
                     }
                 },
                 {
@@ -139,7 +167,8 @@ router.beforeEach(async (to) => {
     if (to.path === '/admin') {
         const adminTargets = [
             { path: '/admin/games', permission: 'game:manage:list' },
-            { path: '/admin/categories', permissions: ['console:manage:list', 'series:manage:list'] },
+            { path: '/admin/consoles', permission: 'console:manage:list' },
+            { path: '/admin/series', permission: 'series:manage:list' },
             { path: '/admin/users', permission: 'sys:user:list' },
             { path: '/admin/roles', permission: 'sys:role:list' },
             { path: '/admin/menus', permission: 'sys:menu:list' },

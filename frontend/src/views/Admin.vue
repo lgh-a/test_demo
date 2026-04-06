@@ -68,7 +68,10 @@
             <span class="block truncate font-medium">{{ item.label }}</span>
             <span class="admin-muted block truncate text-xs">{{ item.hint }}</span>
           </span>
-          <span v-if="!isSidebarCollapsed && route.path === item.to" class="admin-nav-indicator h-2.5 w-2.5 rounded-full bg-current" />
+          <span
+            v-if="!isSidebarCollapsed && route.path === item.to"
+            class="admin-nav-indicator h-2.5 w-2.5 rounded-full bg-current"
+          />
         </button>
       </div>
 
@@ -128,8 +131,11 @@ const copy = computed(() =>
     ? {
         workbench: '管理工作台',
         navigation: '功能导航',
+        consolesLabel: '主机管理',
+        seriesLabel: '系列管理',
         gamesHint: '游戏与运营',
-        categoriesHint: '主机与系列',
+        consolesHint: '主机分类与平台',
+        seriesHint: '系列分类与归属',
         usersHint: '账号与用户',
         rolesHint: '角色与权限',
         menusHint: '菜单与路由',
@@ -140,8 +146,11 @@ const copy = computed(() =>
     : {
         workbench: 'Admin workbench',
         navigation: 'Navigation',
+        consolesLabel: 'Console Management',
+        seriesLabel: 'Series Management',
         gamesHint: 'Games and operations',
-        categoriesHint: 'Consoles and series',
+        consolesHint: 'Console catalogs and platforms',
+        seriesHint: 'Series catalogs and grouping',
         usersHint: 'Accounts and users',
         rolesHint: 'Roles and permissions',
         menusHint: 'Menus and routes',
@@ -156,11 +165,18 @@ const dashboardText = computed(() => copy.value)
 const tabs = computed(() => [
   { label: t('admin.games'), hint: copy.value.gamesHint, code: 'GM', to: '/admin/games', permissions: ['game:manage:list'] },
   {
-    label: t('admin.categories'),
-    hint: copy.value.categoriesHint,
-    code: 'CT',
-    to: '/admin/categories',
-    permissions: ['console:manage:list', 'series:manage:list']
+    label: copy.value.consolesLabel,
+    hint: copy.value.consolesHint,
+    code: 'CS',
+    to: '/admin/consoles',
+    permissions: ['console:manage:list']
+  },
+  {
+    label: copy.value.seriesLabel,
+    hint: copy.value.seriesHint,
+    code: 'SR',
+    to: '/admin/series',
+    permissions: ['series:manage:list']
   },
   { label: t('admin.users'), hint: copy.value.usersHint, code: 'US', to: '/admin/users', permissions: ['sys:user:list'] },
   { label: t('admin.roles'), hint: copy.value.rolesHint, code: 'RL', to: '/admin/roles', permissions: ['sys:role:list'] },

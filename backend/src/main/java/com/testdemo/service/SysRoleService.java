@@ -1,13 +1,14 @@
 package com.testdemo.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.service.IService;
 import com.testdemo.common.OperationResult;
 import com.testdemo.dto.RoleCreateRequest;
 import com.testdemo.entity.SysRole;
 
 import java.util.List;
 
-public interface SysRoleService {
+public interface SysRoleService extends IService<SysRole> {
 
     List<SysRole> listRoles();
 

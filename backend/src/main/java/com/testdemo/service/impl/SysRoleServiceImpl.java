@@ -3,10 +3,12 @@ package com.testdemo.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.testdemo.common.OperationResult;
 import com.testdemo.dto.RoleCreateRequest;
 import com.testdemo.entity.SysMenu;
 import com.testdemo.entity.SysRole;
+import com.testdemo.entity.SysRoleMenu;
 import com.testdemo.entity.SysUserRole;
 import com.testdemo.mapper.SysMenuMapper;
 import com.testdemo.mapper.SysRoleMapper;
@@ -27,7 +29,7 @@ import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
-public class SysRoleServiceImpl implements SysRoleService {
+public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> implements SysRoleService {
 
     private static final Logger log = LoggerFactory.getLogger(SysRoleServiceImpl.class);
 
@@ -100,7 +102,7 @@ public class SysRoleServiceImpl implements SysRoleService {
     public List<Integer> getRoleMenuIds(Integer roleId) {
         return sysRoleMenuMapper.selectByRoleId(roleId)
                 .stream()
-                .map(com.testdemo.entity.SysRoleMenu::getMenuId)
+                .map(SysRoleMenu::getMenuId)
                 .toList();
     }
 
@@ -127,7 +129,7 @@ public class SysRoleServiceImpl implements SysRoleService {
 
         sysRoleMenuMapper.deleteByRoleId(roleId);
         for (Integer menuId : distinctMenuIds) {
-            com.testdemo.entity.SysRoleMenu relation = new com.testdemo.entity.SysRoleMenu();
+            SysRoleMenu relation = new SysRoleMenu();
             relation.setRoleId(roleId);
             relation.setMenuId(menuId);
             sysRoleMenuMapper.insertRelation(relation);

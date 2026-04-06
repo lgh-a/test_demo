@@ -1,6 +1,7 @@
 package com.testdemo.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.testdemo.entity.GameInfo;
 import com.testdemo.entity.UserFavorite;
 import com.testdemo.mapper.UserFavoriteMapper;
@@ -17,7 +18,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class UserFavoriteServiceImpl implements UserFavoriteService {
+public class UserFavoriteServiceImpl extends ServiceImpl<UserFavoriteMapper, UserFavorite> implements UserFavoriteService {
 
     private static final Logger log = LoggerFactory.getLogger(UserFavoriteServiceImpl.class);
 
@@ -52,13 +53,13 @@ public class UserFavoriteServiceImpl implements UserFavoriteService {
     @Override
     @Transactional
     public boolean removeFavorite(Integer userId, Integer gameId) {
-        int affected = userFavoriteMapper.delete(new LambdaQueryWrapper<UserFavorite>()
+        boolean removed = userFavoriteMapper.delete(new LambdaQueryWrapper<UserFavorite>()
                 .eq(UserFavorite::getUserId, userId)
-                .eq(UserFavorite::getGameId, gameId));
-        if (affected > 0) {
+                .eq(UserFavorite::getGameId, gameId)) > 0;
+        if (removed) {
             log.info("Removed favorite game: userId={}, gameId={}", userId, gameId);
         }
-        return affected > 0;
+        return removed;
     }
 
     @Override

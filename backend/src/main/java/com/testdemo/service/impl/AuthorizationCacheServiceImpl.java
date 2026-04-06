@@ -2,6 +2,7 @@ package com.testdemo.service.impl;
 
 import cn.dev33.satoken.session.SaSession;
 import cn.dev33.satoken.stp.StpUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.testdemo.entity.SysUserRole;
 import com.testdemo.mapper.SysUserRoleMapper;
 import com.testdemo.service.AuthorizationCacheService;
@@ -67,7 +68,9 @@ public class AuthorizationCacheServiceImpl implements AuthorizationCacheService 
         }
 
         List<Integer> userIds = distinctRoleIds.stream()
-                .flatMap(roleId -> sysUserRoleMapper.selectByRoleId(roleId).stream())
+                .flatMap(roleId -> sysUserRoleMapper.selectList(
+                                new LambdaQueryWrapper<SysUserRole>().eq(SysUserRole::getRoleId, roleId))
+                        .stream())
                 .map(SysUserRole::getUserId)
                 .distinct()
                 .toList();

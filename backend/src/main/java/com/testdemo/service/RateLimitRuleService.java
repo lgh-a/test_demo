@@ -1,11 +1,12 @@
 package com.testdemo.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.service.IService;
 import com.testdemo.entity.RateLimitRule;
 
 import java.util.List;
 
-public interface RateLimitRuleService {
+public interface RateLimitRuleService extends IService<RateLimitRule> {
 
     /**
      * 分页查询规则列表

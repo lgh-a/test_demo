@@ -1,6 +1,7 @@
 package com.testdemo.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.testdemo.entity.GameInfo;
 import com.testdemo.entity.UserHistory;
 import com.testdemo.mapper.UserHistoryMapper;
@@ -18,7 +19,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class UserHistoryServiceImpl implements UserHistoryService {
+public class UserHistoryServiceImpl extends ServiceImpl<UserHistoryMapper, UserHistory> implements UserHistoryService {
 
     private static final Logger log = LoggerFactory.getLogger(UserHistoryServiceImpl.class);
 

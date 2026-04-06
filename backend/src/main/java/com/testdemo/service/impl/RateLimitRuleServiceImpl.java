@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.testdemo.config.RateLimitRuleManager;
 import com.testdemo.entity.RateLimitRule;
 import com.testdemo.mapper.RateLimitRuleMapper;
@@ -18,7 +19,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class RateLimitRuleServiceImpl implements RateLimitRuleService {
+public class RateLimitRuleServiceImpl extends ServiceImpl<RateLimitRuleMapper, RateLimitRule> implements RateLimitRuleService {
     private static final Logger log = LoggerFactory.getLogger(RateLimitRuleServiceImpl.class);
 
     private final RateLimitRuleMapper rateLimitRuleMapper;
@@ -47,15 +48,15 @@ public class RateLimitRuleServiceImpl implements RateLimitRuleService {
 
     @Override
     public boolean addRule(RateLimitRule rule) {
-        int rows = rateLimitRuleMapper.insert(rule);
-        if (rows > 0) {
+        boolean saved = rateLimitRuleMapper.insert(rule) > 0;
+        if (saved) {
             syncRuleCache(rule, null);
             log.info("Created rate limit rule: ruleId={}, configKey={}, status={}",
                     rule.getId(), rule.getConfigKey(), rule.getStatus());
         } else {
             log.warn("Failed to create rate limit rule: configKey={}", rule.getConfigKey());
         }
-        return rows > 0;
+        return saved;
     }
 
     @Override
@@ -77,15 +78,15 @@ public class RateLimitRuleServiceImpl implements RateLimitRuleService {
                 .set(RateLimitRule::getGuestRate, rule.getGuestRate())
                 .set(RateLimitRule::getStatus, rule.getStatus())
                 .set(rule.getVersion() != null, RateLimitRule::getVersion, rule.getVersion());
-        int rows = rateLimitRuleMapper.update(null, updateWrapper);
-        if (rows > 0) {
+        boolean updated = rateLimitRuleMapper.update(null, updateWrapper) > 0;
+        if (updated) {
             syncRuleCache(rule, existingRule.getConfigKey());
             log.info("Updated rate limit rule: ruleId={}, configKey={}, previousConfigKey={}, status={}",
                     rule.getId(), rule.getConfigKey(), existingRule.getConfigKey(), rule.getStatus());
         } else {
             log.warn("Failed to update rate limit rule: ruleId={}, configKey={}", rule.getId(), rule.getConfigKey());
         }
-        return rows > 0;
+        return updated;
     }
 
     @Override
@@ -135,8 +136,8 @@ public class RateLimitRuleServiceImpl implements RateLimitRuleService {
             rule.setVersion(1);
         }
 
-        int rows = rateLimitRuleMapper.insert(rule);
-        if (rows > 0) {
+        boolean saved = rateLimitRuleMapper.insert(rule) > 0;
+        if (saved) {
             syncRuleCache(rule, null);
             log.info("Synced annotated rate limit rule into database: configKey={}, ruleId={}",
                     rule.getConfigKey(), rule.getId());

@@ -1,30 +1,31 @@
 package com.testdemo.mapper;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.testdemo.entity.SysUserRole;
-import org.apache.ibatis.annotations.Delete;
-import org.apache.ibatis.annotations.Insert;
-import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
+public interface SysUserRoleMapper extends BaseMapper<SysUserRole> {
 
-import java.util.List;
+    default java.util.List<SysUserRole> selectAll() {
+        return selectList(null);
+    }
 
-public interface SysUserRoleMapper {
+    default java.util.List<SysUserRole> selectByUserId(Integer userId) {
+        return selectList(new LambdaQueryWrapper<SysUserRole>().eq(SysUserRole::getUserId, userId));
+    }
 
-    @Select("SELECT user_id, role_id FROM sys_user_role")
-    List<SysUserRole> selectAll();
+    default java.util.List<SysUserRole> selectByRoleId(Integer roleId) {
+        return selectList(new LambdaQueryWrapper<SysUserRole>().eq(SysUserRole::getRoleId, roleId));
+    }
 
-    @Select("SELECT user_id, role_id FROM sys_user_role WHERE user_id = #{userId}")
-    List<SysUserRole> selectByUserId(@Param("userId") Integer userId);
+    default int insertRelation(SysUserRole relation) {
+        return insert(relation);
+    }
 
-    @Select("SELECT user_id, role_id FROM sys_user_role WHERE role_id = #{roleId}")
-    List<SysUserRole> selectByRoleId(@Param("roleId") Integer roleId);
+    default int deleteByUserId(Integer userId) {
+        return delete(new LambdaQueryWrapper<SysUserRole>().eq(SysUserRole::getUserId, userId));
+    }
 
-    @Insert("INSERT INTO sys_user_role(user_id, role_id) VALUES(#{userId}, #{roleId})")
-    int insertRelation(SysUserRole relation);
-
-    @Delete("DELETE FROM sys_user_role WHERE user_id = #{userId}")
-    int deleteByUserId(@Param("userId") Integer userId);
-
-    @Delete("DELETE FROM sys_user_role WHERE role_id = #{roleId}")
-    int deleteByRoleId(@Param("roleId") Integer roleId);
+    default int deleteByRoleId(Integer roleId) {
+        return delete(new LambdaQueryWrapper<SysUserRole>().eq(SysUserRole::getRoleId, roleId));
+    }
 }

@@ -185,15 +185,14 @@ INSERT INTO `sys_menu` (`id`, `parent_id`, `name`, `perms`, `type`, `sort`, `ico
 (23, 22, 'Add Game', 'game:manage:add', 3, 1, NULL, NULL),
 (24, 22, 'Update Game', 'game:manage:update', 3, 2, NULL, NULL),
 (25, 22, 'Delete Game', 'game:manage:delete', 3, 3, NULL, NULL),
-(26, 1, 'Category Management', '', 2, 5, 'category', '/admin/categories'),
-(27, 26, 'Console Management', 'console:manage:list', 2, 1, 'console', NULL),
-(28, 27, 'Add Console', 'console:manage:add', 3, 1, NULL, NULL),
-(29, 27, 'Update Console', 'console:manage:update', 3, 2, NULL, NULL),
-(30, 27, 'Delete Console', 'console:manage:delete', 3, 3, NULL, NULL),
-(31, 26, 'Series Management', 'series:manage:list', 2, 2, 'series', NULL),
-(32, 31, 'Add Series', 'series:manage:add', 3, 1, NULL, NULL),
-(33, 31, 'Update Series', 'series:manage:update', 3, 2, NULL, NULL),
-(34, 31, 'Delete Series', 'series:manage:delete', 3, 3, NULL, NULL);
+(26, 1, 'Console Management', 'console:manage:list', 2, 5, 'console', '/admin/consoles'),
+(27, 26, 'Add Console', 'console:manage:add', 3, 1, NULL, NULL),
+(28, 26, 'Update Console', 'console:manage:update', 3, 2, NULL, NULL),
+(29, 26, 'Delete Console', 'console:manage:delete', 3, 3, NULL, NULL),
+(30, 1, 'Series Management', 'series:manage:list', 2, 6, 'series', '/admin/series'),
+(31, 30, 'Add Series', 'series:manage:add', 3, 1, NULL, NULL),
+(32, 30, 'Update Series', 'series:manage:update', 3, 2, NULL, NULL),
+(33, 30, 'Delete Series', 'series:manage:delete', 3, 3, NULL, NULL);
 
 INSERT INTO `sys_user_role` (`user_id`, `role_id`) VALUES
 (1, 1),
@@ -233,7 +232,6 @@ INSERT INTO `sys_role_menu` (`role_id`, `menu_id`) VALUES
 (1, 31),
 (1, 32),
 (1, 33),
-(1, 34),
 (2, 4),
 (2, 5),
 (2, 6);
