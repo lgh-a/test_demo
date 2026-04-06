@@ -1,6 +1,7 @@
 package com.testdemo.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.testdemo.common.OperationResult;
 import com.testdemo.common.Result;
 import com.testdemo.common.exception.BusinessException;
@@ -12,6 +13,8 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
@@ -21,6 +24,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -40,6 +44,23 @@ public class SysRoleController {
     @ApiResponse(responseCode = "403", description = "Missing sys:role:list permission")
     public Result<?> list() {
         return Result.success(sysRoleService.listRoles());
+    }
+
+    @GetMapping("/page")
+    @SaCheckPermission("sys:role:list")
+    @Operation(summary = "Page roles", description = "Query roles by page")
+    @ApiResponse(responseCode = "200", description = "Query successful")
+    public Result<?> page(
+            @RequestParam(defaultValue = "1")
+            @Min(value = 1, message = "current must be greater than 0")
+            int current,
+            @RequestParam(defaultValue = "10")
+            @Min(value = 1, message = "size must be greater than 0")
+            @Max(value = 50, message = "size must be less than or equal to 50")
+            int size,
+            @RequestParam(required = false) String keyword) {
+        IPage<?> page = sysRoleService.pageRoles(current, size, keyword);
+        return Result.success(page);
     }
 
     @PostMapping("/add")

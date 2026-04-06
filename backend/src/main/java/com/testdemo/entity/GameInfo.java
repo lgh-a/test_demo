@@ -19,6 +19,9 @@ public class GameInfo {
     private String language;
     private String region;
     private String genre;
+    private Integer status;
+    private Integer isRecommend;
+    private Integer sort;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 }

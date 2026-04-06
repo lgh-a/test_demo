@@ -1,24 +1,16 @@
 <template>
-  <div class="space-y-4">
-    <div class="flex items-center justify-between">
-      <div>
-        <h2 class="text-xl font-bold text-white">{{ t('admin.overview') }}</h2>
-        <p class="text-sm text-gray-400">{{ t('admin.overviewSubtitle') }}</p>
-      </div>
-      <n-button size="small" :loading="loading" @click="loadOverview">{{ t('common.refresh') }}</n-button>
-    </div>
+  <AdminPageCard :eyebrow="t('admin.overview')" :title="t('admin.title')" :subtitle="t('admin.overviewSubtitle')">
+    <template #actions>
+      <n-button size="small" secondary :loading="loading" @click="loadOverview">{{ t('common.refresh') }}</n-button>
+    </template>
 
-    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-      <div
-        v-for="card in cards"
-        :key="card.key"
-        class="rounded-2xl border border-white/10 bg-[#23232a] p-5 shadow-sm"
-      >
-        <div class="text-xs uppercase tracking-[0.28em] text-gray-400">{{ card.label }}</div>
-        <div class="mt-3 text-3xl font-bold text-white">{{ card.value }}</div>
+    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
+      <div v-for="card in cards" :key="card.key" class="admin-overview-card rounded-3xl p-5">
+        <div class="admin-muted text-xs uppercase tracking-[0.28em]">{{ card.label }}</div>
+        <div class="mt-4 text-3xl font-semibold text-[var(--app-text)]">{{ card.value }}</div>
       </div>
     </div>
-  </div>
+  </AdminPageCard>
 </template>
 
 <script setup>
@@ -26,10 +18,12 @@ import { computed, onMounted, ref } from 'vue'
 import { NButton } from 'naive-ui'
 import { request } from '../api/request'
 import { useI18n } from '../i18n'
+import AdminPageCard from './admin/AdminPageCard.vue'
 
 const loading = ref(false)
 const { t } = useI18n()
 const overview = ref({
+  totalGames: 0,
   totalUsers: 0,
   enabledUsers: 0,
   totalRoles: 0,
@@ -38,6 +32,7 @@ const overview = ref({
 })
 
 const cards = computed(() => [
+  { key: 'totalGames', label: t('admin.totalGames'), value: overview.value.totalGames },
   { key: 'totalUsers', label: t('admin.totalUsers'), value: overview.value.totalUsers },
   { key: 'enabledUsers', label: t('admin.enabledUsers'), value: overview.value.enabledUsers },
   { key: 'totalRoles', label: t('admin.totalRoles'), value: overview.value.totalRoles },

@@ -45,8 +45,9 @@ public class GameController {
             @Parameter(description = "Console ID") @RequestParam(required = false) Integer consoleId,
             @Parameter(description = "Series ID") @RequestParam(required = false) Integer seriesId,
             @Parameter(description = "Keyword") @RequestParam(required = false) String keyword,
-            @Parameter(description = "Sort mode: latest, updated, name") @RequestParam(defaultValue = "latest") String sort) {
-        IPage<GameInfo> page = gameService.pageGames(current, size, consoleId, seriesId, keyword, sort);
+            @Parameter(description = "Sort mode: latest, updated, name, recommend") @RequestParam(defaultValue = "latest") String sort,
+            @Parameter(description = "Recommend flag: 1 recommended") @RequestParam(required = false) Integer isRecommend) {
+        IPage<GameInfo> page = gameService.pageGames(current, size, consoleId, seriesId, keyword, sort, isRecommend);
         return Result.success(page);
     }
 
@@ -59,7 +60,7 @@ public class GameController {
     @ApiResponse(responseCode = "403", description = "Missing game:play permission")
     public Result<?> getGame(@Parameter(description = "Game ID") @PathVariable Integer id) {
         GameInfo game = gameService.getById(id);
-        if (game == null) {
+        if (game == null || game.getStatus() == null || game.getStatus() != 1) {
             throw new BusinessException(HttpStatus.NOT_FOUND, "Game not found");
         }
         return Result.success(game);

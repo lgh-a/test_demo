@@ -1,6 +1,8 @@
 package com.testdemo.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.testdemo.common.OperationResult;
 import com.testdemo.dto.RoleCreateRequest;
 import com.testdemo.entity.SysMenu;
@@ -38,6 +40,19 @@ public class SysRoleServiceImpl implements SysRoleService {
     @Override
     public List<SysRole> listRoles() {
         return sysRoleMapper.selectList(new LambdaQueryWrapper<SysRole>().orderByAsc(SysRole::getId));
+    }
+
+    @Override
+    public IPage<SysRole> pageRoles(int current, int size, String keyword) {
+        LambdaQueryWrapper<SysRole> queryWrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(keyword)) {
+            String normalizedKeyword = keyword.trim();
+            queryWrapper.and(wrapper -> wrapper.like(SysRole::getName, normalizedKeyword)
+                    .or()
+                    .like(SysRole::getRemark, normalizedKeyword));
+        }
+        queryWrapper.orderByAsc(SysRole::getId);
+        return sysRoleMapper.selectPage(new Page<>(Math.max(current, 1), Math.max(size, 1)), queryWrapper);
     }
 
     @Override

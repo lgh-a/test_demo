@@ -5,6 +5,7 @@ import com.testdemo.entity.RateLimitRule;
 import com.testdemo.entity.SysMenu;
 import com.testdemo.entity.SysRole;
 import com.testdemo.entity.SysUser;
+import com.testdemo.mapper.GameInfoMapper;
 import com.testdemo.mapper.RateLimitRuleMapper;
 import com.testdemo.mapper.SysMenuMapper;
 import com.testdemo.mapper.SysRoleMapper;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AdminOverviewServiceImpl implements AdminOverviewService {
 
+    private final GameInfoMapper gameInfoMapper;
     private final SysUserMapper sysUserMapper;
     private final SysRoleMapper sysRoleMapper;
     private final SysMenuMapper sysMenuMapper;
@@ -25,6 +27,7 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
 
     @Override
     public AdminOverviewVO getOverview() {
+        long totalGames = gameInfoMapper.selectCount(null);
         long totalUsers = sysUserMapper.selectCount(null);
         long enabledUsers = sysUserMapper.selectCount(new LambdaQueryWrapper<SysUser>().eq(SysUser::getStatus, 1));
         long totalRoles = sysRoleMapper.selectCount(null);
@@ -33,6 +36,6 @@ public class AdminOverviewServiceImpl implements AdminOverviewService {
                 new LambdaQueryWrapper<RateLimitRule>().eq(RateLimitRule::getStatus, 1)
         );
 
-        return new AdminOverviewVO(totalUsers, enabledUsers, totalRoles, totalMenus, activeRateLimitRules);
+        return new AdminOverviewVO(totalGames, totalUsers, enabledUsers, totalRoles, totalMenus, activeRateLimitRules);
     }
 }

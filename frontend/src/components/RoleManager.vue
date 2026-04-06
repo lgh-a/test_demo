@@ -1,34 +1,51 @@
 <template>
-  <div class="space-y-4">
-    <div class="flex justify-end">
-      <n-button type="primary" v-auth="'sys:role:add'" @click="showAdd = true">{{ t('roleManager.addRole') }}</n-button>
-    </div>
+  <div class="w-full min-w-0 space-y-4">
+    <AdminPageCard :eyebrow="t('app.admin')" :title="t('admin.roles')">
+      <template #actions>
+        <n-button type="primary" v-auth="'sys:role:add'" @click="showAdd = true">{{ t('roleManager.addRole') }}</n-button>
+      </template>
 
-    <n-table :bordered="false" :single-line="false">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>{{ t('roleManager.roleName') }}</th>
-          <th>{{ t('roleManager.remark') }}</th>
-          <th>{{ t('common.actions') }}</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="role in roles" :key="role.id">
-          <td>{{ role.id }}</td>
-          <td>{{ role.name }}</td>
-          <td>{{ role.remark }}</td>
-          <td>
-            <div class="flex gap-2">
-              <n-button size="small" v-auth="'sys:role:add'" @click="openAssignModal(role)">{{ t('roleManager.assignPermissions') }}</n-button>
-              <n-button size="small" type="error" v-auth="'sys:role:delete'" @click="handleDelete(role.id)">{{ t('common.delete') }}</n-button>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </n-table>
+      <AdminFilterBar>
+        <div class="admin-filter-grid md:grid-cols-[240px]">
+          <n-input v-model:value="filters.keyword" placeholder="Search role name" @keyup.enter="handleQuery" />
+        </div>
+        <template #actions>
+          <n-button @click="handleReset">{{ t('common.reset') }}</n-button>
+          <n-button type="primary" @click="handleQuery">{{ t('common.query') }}</n-button>
+          <n-button quaternary :loading="tableLoading" @click="fetchRoles">{{ t('common.refresh') }}</n-button>
+        </template>
+      </AdminFilterBar>
 
-    <n-modal v-model:show="showAdd" preset="card" :title="t('roleManager.addRole')" class="w-[500px]">
+      <AdminStatsBar class="mt-4">
+        <span class="admin-stat-chip rounded-2xl px-3 py-1">总角色 {{ pagination.total }}</span>
+        <span class="admin-stat-chip admin-stat-chip--info rounded-2xl px-3 py-1">当前页 {{ roles.length }}</span>
+      </AdminStatsBar>
+    </AdminPageCard>
+
+    <AdminDataCard>
+      <AdminDataTable
+        :columns="columns"
+        :data="roles"
+        :loading="tableLoading"
+        :pagination="false"
+        :row-key="(row) => row.id"
+        :scroll-x="tableScrollX"
+      />
+    </AdminDataCard>
+
+    <AdminPaginationBar>
+      <n-pagination
+        v-model:page="pagination.current"
+        :item-count="pagination.total"
+        :page-size="pagination.size"
+        :page-sizes="pageSizes"
+        show-size-picker
+        @update:page="fetchRoles"
+        @update:page-size="handlePageSizeChange"
+      />
+    </AdminPaginationBar>
+
+    <n-modal v-model:show="showAdd" preset="card" :title="t('roleManager.addRole')" class="admin-form-modal w-[500px] max-w-[calc(100vw-2rem)]">
       <n-form ref="formRef" :model="formModel" :rules="rules" label-placement="left" label-width="100">
         <n-form-item :label="t('roleManager.roleName')" path="name">
           <n-input v-model:value="formModel.name" :placeholder="t('roleManager.roleNamePlaceholder')" />
@@ -37,7 +54,7 @@
           <n-input v-model:value="formModel.remark" :placeholder="t('roleManager.remarkPlaceholder')" />
         </n-form-item>
       </n-form>
-      <div class="mt-4 flex justify-end gap-2">
+      <div class="admin-form-actions">
         <n-button @click="showAdd = false">{{ t('common.cancel') }}</n-button>
         <n-button type="primary" :loading="loading" @click="handleAdd">{{ t('common.confirm') }}</n-button>
       </div>
@@ -47,23 +64,23 @@
       v-model:show="showAssign"
       preset="card"
       :title="t('roleManager.assignTitle', { name: currentRole?.name || '' })"
-      class="w-[500px]"
+      class="admin-form-modal w-[500px] max-w-[calc(100vw-2rem)]"
     >
-      <div v-if="menus.length" class="max-h-[400px] overflow-auto">
+      <div v-if="menuTree.length" class="max-h-[400px] overflow-auto">
         <n-tree
           v-model:checked-keys="checkedMenuIds"
           v-model:indeterminate-keys="indeterminateMenuIds"
           block-line
           cascade
           checkable
-          :data="menus"
+          :data="menuTree"
           key-field="id"
           label-field="name"
           children-field="children"
           default-expand-all
         />
       </div>
-      <div class="mt-4 flex justify-end gap-2">
+      <div class="admin-form-actions">
         <n-button @click="showAssign = false">{{ t('common.cancel') }}</n-button>
         <n-button type="primary" :loading="loading" @click="handleAssign">{{ t('roleManager.saveAssignment') }}</n-button>
       </div>
@@ -72,14 +89,23 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
-import { NButton, NForm, NFormItem, NInput, NModal, NTable, NTree, useMessage } from 'naive-ui'
+import { computed, h, onMounted, ref } from 'vue'
+import { NButton, NForm, NFormItem, NInput, NModal, NPagination, NTree, useMessage } from 'naive-ui'
 import { request } from '../api/request'
+import { useAppStore } from '../store'
 import { useI18n } from '../i18n'
+import AdminDataCard from './admin/AdminDataCard.vue'
+import AdminDataTable from './admin/AdminDataTable.vue'
+import AdminFilterBar from './admin/AdminFilterBar.vue'
+import AdminPageCard from './admin/AdminPageCard.vue'
+import AdminPaginationBar from './admin/AdminPaginationBar.vue'
+import AdminStatsBar from './admin/AdminStatsBar.vue'
 
 const { t } = useI18n()
 const message = useMessage()
+const store = useAppStore()
 const roles = ref([])
+const allMenus = ref([])
 const showAdd = ref(false)
 const formRef = ref(null)
 const formModel = ref({ name: '', remark: '' })
@@ -87,14 +113,113 @@ const rules = {
   name: { required: true, message: t('roleManager.enterRoleName'), trigger: 'blur' }
 }
 const loading = ref(false)
+const tableLoading = ref(false)
 const showAssign = ref(false)
-const menus = ref([])
 const checkedMenuIds = ref([])
 const indeterminateMenuIds = ref([])
 const currentRole = ref(null)
+const pageSizes = [10, 20, 50]
+const pagination = ref({
+  current: 1,
+  size: 10,
+  total: 0
+})
+const filters = ref({
+  keyword: ''
+})
+
+const buildMenuTree = (list, parentId = 0) => {
+  return list
+    .filter((item) => (item.parentId || 0) === parentId)
+    .map((item) => ({
+      ...item,
+      children: buildMenuTree(list, item.id)
+    }))
+    .filter((item) => item.children.length > 0 || item.type !== 1)
+}
+
+const menuTree = computed(() => buildMenuTree(allMenus.value))
+
+const columns = computed(() => [
+  { title: 'ID', key: 'id', width: 90 },
+  { title: t('roleManager.roleName'), key: 'name', minWidth: 180, ellipsis: { tooltip: true } },
+  { title: t('roleManager.remark'), key: 'remark', minWidth: 260, ellipsis: { tooltip: true }, render: (row) => row.remark || '-' },
+  {
+    title: t('common.actions'),
+    key: 'actions',
+    width: 220,
+    align: 'center',
+    fixed: 'right',
+    render: (row) =>
+      h('div', { class: 'admin-table-actions' }, [
+        h(
+          NButton,
+          {
+            size: 'small',
+            style: store.hasPerm('sys:role:add') ? '' : 'display:none',
+            onClick: () => openAssignModal(row)
+          },
+          () => t('roleManager.assignPermissions')
+        ),
+        h(
+          NButton,
+          {
+            size: 'small',
+            type: 'error',
+            style: store.hasPerm('sys:role:delete') ? '' : 'display:none',
+            onClick: () => handleDelete(row.id)
+          },
+          () => t('common.delete')
+        )
+      ])
+  }
+])
+
+const tableScrollX = computed(() =>
+  columns.value.reduce((total, column) => total + Number(column.width || column.minWidth || 160), 0)
+)
 
 const fetchRoles = async () => {
-  roles.value = await request('/roles/list')
+  tableLoading.value = true
+  try {
+    const params = new URLSearchParams({
+      current: String(pagination.value.current),
+      size: String(pagination.value.size)
+    })
+    if (filters.value.keyword.trim()) {
+      params.append('keyword', filters.value.keyword.trim())
+    }
+
+    const data = await request(`/roles/page?${params.toString()}`)
+    roles.value = Array.isArray(data.records) ? data.records : []
+    pagination.value.total = Number(data.total || 0)
+  } catch (error) {
+    message.error(error.message || t('roleManager.loadPermissionDataFailed'))
+  } finally {
+    tableLoading.value = false
+  }
+}
+
+const fetchAllMenus = async () => {
+  allMenus.value = await request('/menus/list')
+}
+
+const handleQuery = async () => {
+  pagination.value.current = 1
+  await fetchRoles()
+}
+
+const handleReset = async () => {
+  filters.value.keyword = ''
+  pagination.value.current = 1
+  pagination.value.size = 10
+  await fetchRoles()
+}
+
+const handlePageSizeChange = async (size) => {
+  pagination.value.size = size
+  pagination.value.current = 1
+  await fetchRoles()
 }
 
 const handleAdd = () => {
@@ -111,6 +236,8 @@ const handleAdd = () => {
       showAdd.value = false
       formModel.value = { name: '', remark: '' }
       await fetchRoles()
+    } catch (error) {
+      message.error(error.message || t('roleManager.loadPermissionDataFailed'))
     } finally {
       loading.value = false
     }
@@ -118,31 +245,30 @@ const handleAdd = () => {
 }
 
 const handleDelete = async (id) => {
-  await request(`/roles/${id}`, { method: 'DELETE' })
-  message.success(t('roleManager.deleteSuccess'))
-  await fetchRoles()
-}
-
-const buildMenuTree = (list, parentId = 0) => {
-  return list
-    .filter((item) => (item.parentId || 0) === parentId)
-    .map((item) => ({
-      ...item,
-      children: buildMenuTree(list, item.id)
-    }))
-    .filter((item) => item.children.length > 0 || item.type !== 1)
+  try {
+    await request(`/roles/${id}`, { method: 'DELETE' })
+    message.success(t('roleManager.deleteSuccess'))
+    if (roles.value.length === 1 && pagination.value.current > 1) {
+      pagination.value.current -= 1
+    }
+    await fetchRoles()
+  } catch (error) {
+    message.error(error.message || t('roleManager.loadPermissionDataFailed'))
+  }
 }
 
 const openAssignModal = async (role) => {
   currentRole.value = role
   loading.value = true
   try {
-    const allMenus = await request('/menus/list')
-    menus.value = buildMenuTree(allMenus)
+    if (allMenus.value.length === 0) {
+      await fetchAllMenus()
+    }
 
     const roleMenus = await request(`/roles/${role.id}/menus`)
-    const parentNodeIds = new Set(allMenus.map((menu) => menu.parentId).filter((id) => id))
+    const parentNodeIds = new Set(allMenus.value.map((menu) => menu.parentId).filter((id) => id))
     checkedMenuIds.value = roleMenus.filter((id) => !parentNodeIds.has(id))
+    indeterminateMenuIds.value = []
     showAssign.value = true
   } catch (error) {
     message.error(t('roleManager.loadPermissionDataFailed'))
@@ -159,14 +285,18 @@ const handleAssign = async () => {
     const finalMenuIds = [...new Set([...checkedMenuIds.value, ...indeterminateMenuIds.value])]
     await request(`/roles/${currentRole.value.id}/menus`, {
       method: 'POST',
-      body: JSON.stringify(finalMenuIds)
+      body: JSON.stringify({ menuIds: finalMenuIds })
     })
     message.success(t('roleManager.assignSuccess'))
     showAssign.value = false
+  } catch (error) {
+    message.error(t('roleManager.loadPermissionDataFailed'))
   } finally {
     loading.value = false
   }
 }
 
-onMounted(fetchRoles)
+onMounted(async () => {
+  await Promise.all([fetchRoles(), fetchAllMenus()])
+})
 </script>

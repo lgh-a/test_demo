@@ -11,6 +11,8 @@ const AdminUsers = () => import('../views/AdminUsers.vue')
 const AdminRoles = () => import('../views/AdminRoles.vue')
 const AdminMenus = () => import('../views/AdminMenus.vue')
 const AdminRateLimit = () => import('../views/AdminRateLimit.vue')
+const AdminGames = () => import('../views/AdminGames.vue')
+const AdminCategories = () => import('../views/AdminCategories.vue')
 const Forbidden = () => import('../views/Forbidden.vue')
 const NotFound = () => import('../views/NotFound.vue')
 
@@ -51,6 +53,9 @@ const router = createRouter({
             meta: {
                 requiresAuth: true,
                 requiredPermissions: [
+                    'game:manage:list',
+                    'console:manage:list',
+                    'series:manage:list',
                     'sys:user:list',
                     'sys:role:list',
                     'sys:menu:list',
@@ -58,6 +63,24 @@ const router = createRouter({
                 ]
             },
             children: [
+                {
+                    path: 'games',
+                    name: 'AdminGames',
+                    component: AdminGames,
+                    meta: {
+                        requiresAuth: true,
+                        requiredPermissions: ['game:manage:list']
+                    }
+                },
+                {
+                    path: 'categories',
+                    name: 'AdminCategories',
+                    component: AdminCategories,
+                    meta: {
+                        requiresAuth: true,
+                        requiredPermissions: ['console:manage:list', 'series:manage:list']
+                    }
+                },
                 {
                     path: 'users',
                     name: 'AdminUsers',
@@ -115,12 +138,17 @@ router.beforeEach(async (to) => {
 
     if (to.path === '/admin') {
         const adminTargets = [
+            { path: '/admin/games', permission: 'game:manage:list' },
+            { path: '/admin/categories', permissions: ['console:manage:list', 'series:manage:list'] },
             { path: '/admin/users', permission: 'sys:user:list' },
             { path: '/admin/roles', permission: 'sys:role:list' },
             { path: '/admin/menus', permission: 'sys:menu:list' },
             { path: '/admin/rate-limit', permission: 'rate-limit:rule:list' }
         ]
-        const firstAllowed = adminTargets.find((item) => store.hasPerm(item.permission))
+        const firstAllowed = adminTargets.find((item) => {
+            const permissions = Array.isArray(item.permissions) ? item.permissions : [item.permission]
+            return permissions.some((permission) => store.hasPerm(permission))
+        })
         if (firstAllowed) {
             return firstAllowed.path
         }

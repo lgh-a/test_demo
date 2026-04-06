@@ -43,11 +43,16 @@ CREATE TABLE `game_info` (
   `language` varchar(50) DEFAULT 'Unknown' COMMENT 'Language',
   `region` varchar(50) DEFAULT 'Unknown' COMMENT 'Region',
   `genre` varchar(50) DEFAULT NULL COMMENT 'Genre',
+  `status` tinyint DEFAULT 1 COMMENT '1 published, 0 unpublished',
+  `is_recommend` tinyint DEFAULT 0 COMMENT '1 recommended, 0 normal',
+  `sort` int DEFAULT 0 COMMENT 'Sort order, smaller first',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
   `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_game_info_console_id` (`console_id`),
-  KEY `idx_game_info_series_id` (`series_id`)
+  KEY `idx_game_info_series_id` (`series_id`),
+  KEY `idx_game_info_status` (`status`),
+  KEY `idx_game_info_recommend_sort` (`is_recommend`, `sort`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Games';
 
 CREATE TABLE `user_history` (
@@ -175,7 +180,20 @@ INSERT INTO `sys_menu` (`id`, `parent_id`, `name`, `perms`, `type`, `sort`, `ico
 (18, 1, 'User Management', 'sys:user:list', 2, 0, 'user', NULL),
 (19, 18, 'Add User', 'sys:user:add', 3, 1, NULL, NULL),
 (20, 18, 'Update User', 'sys:user:update', 3, 2, NULL, NULL),
-(21, 18, 'Reset Password', 'sys:user:reset-password', 3, 3, NULL, NULL);
+(21, 18, 'Reset Password', 'sys:user:reset-password', 3, 3, NULL, NULL),
+(22, 1, 'Game Management', 'game:manage:list', 2, 4, 'game', '/admin/games'),
+(23, 22, 'Add Game', 'game:manage:add', 3, 1, NULL, NULL),
+(24, 22, 'Update Game', 'game:manage:update', 3, 2, NULL, NULL),
+(25, 22, 'Delete Game', 'game:manage:delete', 3, 3, NULL, NULL),
+(26, 1, 'Category Management', '', 2, 5, 'category', '/admin/categories'),
+(27, 26, 'Console Management', 'console:manage:list', 2, 1, 'console', NULL),
+(28, 27, 'Add Console', 'console:manage:add', 3, 1, NULL, NULL),
+(29, 27, 'Update Console', 'console:manage:update', 3, 2, NULL, NULL),
+(30, 27, 'Delete Console', 'console:manage:delete', 3, 3, NULL, NULL),
+(31, 26, 'Series Management', 'series:manage:list', 2, 2, 'series', NULL),
+(32, 31, 'Add Series', 'series:manage:add', 3, 1, NULL, NULL),
+(33, 31, 'Update Series', 'series:manage:update', 3, 2, NULL, NULL),
+(34, 31, 'Delete Series', 'series:manage:delete', 3, 3, NULL, NULL);
 
 INSERT INTO `sys_user_role` (`user_id`, `role_id`) VALUES
 (1, 1),
@@ -203,6 +221,19 @@ INSERT INTO `sys_role_menu` (`role_id`, `menu_id`) VALUES
 (1, 19),
 (1, 20),
 (1, 21),
+(1, 22),
+(1, 23),
+(1, 24),
+(1, 25),
+(1, 26),
+(1, 27),
+(1, 28),
+(1, 29),
+(1, 30),
+(1, 31),
+(1, 32),
+(1, 33),
+(1, 34),
 (2, 4),
 (2, 5),
 (2, 6);

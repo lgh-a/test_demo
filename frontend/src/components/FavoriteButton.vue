@@ -1,9 +1,7 @@
 <template>
   <button
-    class="inline-flex h-9 min-w-9 items-center justify-center rounded-full border px-3 text-sm transition-colors"
-    :class="favorite
-      ? 'border-amber-400/60 bg-amber-400/15 text-amber-200'
-      : 'border-white/15 bg-black/35 text-white/80 hover:border-white/30 hover:text-white'"
+    class="favorite-button inline-flex h-9 min-w-9 items-center justify-center rounded-full border px-3 text-sm"
+    :class="favorite ? 'favorite-button--active' : 'favorite-button--idle'"
     @click.stop="handleToggle"
   >
     {{ favorite ? t('game.favorited') : t('game.favorite') }}
@@ -45,3 +43,34 @@ const handleToggle = async () => {
   }
 }
 </script>
+
+<style scoped>
+.favorite-button {
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.favorite-button:hover {
+  transform: translateY(-1px);
+}
+
+.favorite-button--idle {
+  border-color: var(--app-border);
+  background: var(--app-surface-soft);
+  color: var(--app-text);
+}
+
+.favorite-button--idle:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  background: var(--app-surface-hover);
+}
+
+.favorite-button--active {
+  border-color: rgba(245, 158, 11, 0.34);
+  background: rgba(245, 158, 11, 0.14);
+  color: #f59e0b;
+}
+</style>

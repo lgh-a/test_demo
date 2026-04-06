@@ -1,6 +1,8 @@
 package com.testdemo.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.testdemo.common.OperationResult;
 import com.testdemo.dto.AdminUserCreateRequest;
 import com.testdemo.dto.AdminUserUpdateRequest;
@@ -18,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -38,6 +41,31 @@ public class AdminUserServiceImpl implements AdminUserService {
     @Override
     public List<AdminUserVO> listUsers() {
         List<SysUser> users = sysUserService.list(new LambdaQueryWrapper<SysUser>().orderByDesc(SysUser::getId));
+        return toAdminUserVOs(users);
+    }
+
+    @Override
+    public IPage<AdminUserVO> pageUsers(int current, int size, String keyword, Integer status) {
+        LambdaQueryWrapper<SysUser> queryWrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(keyword)) {
+            queryWrapper.like(SysUser::getUsername, keyword.trim());
+        }
+        if (status != null) {
+            queryWrapper.eq(SysUser::getStatus, status);
+        }
+        queryWrapper.orderByDesc(SysUser::getId);
+
+        Page<SysUser> page = new Page<>(Math.max(current, 1), Math.max(size, 1));
+        Page<SysUser> userPage = sysUserService.page(page, queryWrapper);
+        List<AdminUserVO> records = toAdminUserVOs(userPage.getRecords());
+
+        Page<AdminUserVO> result = new Page<>(userPage.getCurrent(), userPage.getSize(), userPage.getTotal());
+        result.setPages(userPage.getPages());
+        result.setRecords(records);
+        return result;
+    }
+
+    private List<AdminUserVO> toAdminUserVOs(List<SysUser> users) {
         List<SysUserRole> userRoles = sysUserRoleMapper.selectAll();
         Map<Integer, Integer> roleIdByUserId = userRoles.stream()
                 .collect(Collectors.toMap(SysUserRole::getUserId, SysUserRole::getRoleId, (a, b) -> a));
@@ -59,7 +87,6 @@ public class AdminUserServiceImpl implements AdminUserService {
                 })
                 .toList();
     }
-
     @Override
     @Transactional
     public OperationResult<Void> createUser(AdminUserCreateRequest request) {

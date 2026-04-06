@@ -1,12 +1,44 @@
 <template>
-  <div class="space-y-4">
-    <div class="flex justify-end">
-      <n-button type="primary" v-auth="'sys:menu:add'" @click="openAddModal">{{ t('menuManager.addMenu') }}</n-button>
-    </div>
+  <div class="w-full min-w-0 space-y-4">
+    <AdminPageCard :eyebrow="t('app.admin')" :title="t('admin.menus')">
+      <template #actions>
+        <n-button type="primary" v-auth="'sys:menu:add'" @click="openAddModal">{{ t('menuManager.addMenu') }}</n-button>
+      </template>
 
-    <n-data-table :columns="columns" :data="menuTree" :row-key="(row) => row.id" :default-expand-all="true" />
+      <AdminFilterBar>
+        <div class="admin-filter-grid md:grid-cols-[240px]">
+          <n-input v-model:value="filters.keyword" placeholder="Search name / path / permission" @keyup.enter="handleQuery" />
+        </div>
+        <template #actions>
+          <n-button @click="handleReset">{{ t('common.reset') }}</n-button>
+          <n-button type="primary" @click="handleQuery">{{ t('common.query') }}</n-button>
+          <n-button quaternary :loading="tableLoading" @click="refreshMenus">{{ t('common.refresh') }}</n-button>
+        </template>
+      </AdminFilterBar>
 
-    <n-modal v-model:show="showModal" preset="card" :title="modalTitle" class="w-[500px]">
+      <AdminStatsBar class="mt-4">
+        <span class="admin-stat-chip rounded-2xl px-3 py-1">总数 {{ allMenus.length }}</span>
+        <span class="admin-stat-chip admin-stat-chip--info rounded-2xl px-3 py-1">当前展示 {{ filteredMenuCount }}</span>
+        <span class="admin-stat-chip admin-stat-chip--info rounded-2xl px-3 py-1">目录 {{ menuStats.directory }}</span>
+        <span class="admin-stat-chip admin-stat-chip--success rounded-2xl px-3 py-1">菜单 {{ menuStats.menu }}</span>
+        <span class="admin-stat-chip admin-stat-chip--warning rounded-2xl px-3 py-1">按钮 {{ menuStats.button }}</span>
+      </AdminStatsBar>
+    </AdminPageCard>
+
+    <AdminDataCard>
+      <AdminDataTable
+        :columns="columns"
+        :data="displayMenus"
+        :loading="tableLoading"
+        :pagination="false"
+        :row-key="(row) => row.id"
+        :scroll-x="tableScrollX"
+        children-key="children"
+        default-expand-all
+      />
+    </AdminDataCard>
+
+    <n-modal v-model:show="showModal" preset="card" :title="modalTitle" class="admin-form-modal w-[500px] max-w-[calc(100vw-2rem)]">
       <n-form ref="formRef" :model="formModel" :rules="rules" label-placement="left" label-width="100">
         <n-form-item :label="t('menuManager.type')" path="type">
           <n-radio-group v-model:value="formModel.type" name="menu-type">
@@ -41,12 +73,17 @@
           <n-input v-model:value="formModel.icon" :placeholder="t('menuManager.iconPlaceholder')" />
         </n-form-item>
         <n-form-item :label="t('menuManager.sort')" path="sort">
-          <n-input-number v-model:value="formModel.sort" :min="0" :placeholder="t('menuManager.sortPlaceholder')" class="w-full" />
+          <n-input-number
+            v-model:value="formModel.sort"
+            :min="0"
+            :placeholder="t('menuManager.sortPlaceholder')"
+            class="w-full"
+          />
         </n-form-item>
       </n-form>
-      <div class="mt-4 flex justify-end gap-2">
+      <div class="admin-form-actions">
         <n-button @click="showModal = false">{{ t('common.cancel') }}</n-button>
-        <n-button type="primary" :loading="loading" @click="handleSubmit">{{ t('common.confirm') }}</n-button>
+        <n-button type="primary" :loading="saving" @click="handleSubmit">{{ t('common.confirm') }}</n-button>
       </div>
     </n-modal>
   </div>
@@ -56,7 +93,6 @@
 import { computed, h, onMounted, ref } from 'vue'
 import {
   NButton,
-  NDataTable,
   NForm,
   NFormItem,
   NInput,
@@ -70,16 +106,27 @@ import {
   useMessage
 } from 'naive-ui'
 import { request } from '../api/request'
+import { useAppStore } from '../store'
 import { useI18n } from '../i18n'
+import AdminDataCard from './admin/AdminDataCard.vue'
+import AdminDataTable from './admin/AdminDataTable.vue'
+import AdminFilterBar from './admin/AdminFilterBar.vue'
+import AdminPageCard from './admin/AdminPageCard.vue'
+import AdminStatsBar from './admin/AdminStatsBar.vue'
 
 const { t } = useI18n()
 const message = useMessage()
-const menus = ref([])
+const store = useAppStore()
+const allMenus = ref([])
 const showModal = ref(false)
 const isEdit = ref(false)
 const editingId = ref(null)
-const loading = ref(false)
+const saving = ref(false)
+const tableLoading = ref(false)
 const formRef = ref(null)
+const filters = ref({
+  keyword: ''
+})
 
 const defaultForm = {
   name: '',
@@ -116,21 +163,60 @@ const buildTree = (list, parentId) => {
     .sort((a, b) => (a.sort || 0) - (b.sort || 0))
 }
 
-const menuTree = computed(() => buildTree(menus.value, 0))
+const normalizedKeyword = computed(() => filters.value.keyword.trim().toLowerCase())
+
+const filteredMenus = computed(() => {
+  const keyword = normalizedKeyword.value
+  if (!keyword) {
+    return allMenus.value
+  }
+
+  const menuMap = new Map(allMenus.value.map((item) => [item.id, item]))
+  const includedIds = new Set()
+
+  allMenus.value.forEach((item) => {
+    const candidates = [item.name, item.path, item.perms]
+    const matched = candidates.some((value) => String(value || '').toLowerCase().includes(keyword))
+    if (!matched) {
+      return
+    }
+
+    let current = item
+    while (current) {
+      includedIds.add(current.id)
+      const parentId = current.parentId || 0
+      if (!parentId) {
+        break
+      }
+      current = menuMap.get(parentId)
+    }
+  })
+
+  return allMenus.value.filter((item) => includedIds.has(item.id))
+})
+
+const displayMenus = computed(() => buildTree(filteredMenus.value, 0))
+const filteredMenuCount = computed(() => filteredMenus.value.length)
 
 const parentOptions = computed(() => {
   const options = buildTree(
-    menus.value.filter((menu) => menu.type !== 3),
+    allMenus.value.filter((menu) => Number(menu.type) !== 3),
     0
   )
   return [{ id: 0, name: t('menuManager.topLevelMenu'), children: options }]
 })
 
 const modalTitle = computed(() => (isEdit.value ? t('menuManager.editMenu') : t('menuManager.addMenu')))
+const menuStats = computed(() => ({
+  directory: allMenus.value.filter((item) => Number(item.type) === 1).length,
+  menu: allMenus.value.filter((item) => Number(item.type) === 2).length,
+  button: allMenus.value.filter((item) => Number(item.type) === 3).length
+}))
+const parentNameMap = computed(() => Object.fromEntries(allMenus.value.map((item) => [item.id, item.name])))
 
 const columns = computed(() => [
+  { title: t('menuManager.name'), key: 'name', minWidth: 240, ellipsis: { tooltip: true } },
   { title: 'ID', key: 'id', width: 80 },
-  { title: t('menuManager.name'), key: 'name', width: 150 },
   {
     title: t('menuManager.type'),
     key: 'type',
@@ -143,28 +229,40 @@ const columns = computed(() => [
       )
   },
   {
+    title: t('menuManager.parentMenu'),
+    key: 'parentId',
+    width: 160,
+    ellipsis: { tooltip: true },
+    render: (row) => (row.parentId ? parentNameMap.value[row.parentId] || row.parentId : t('menuManager.topLevelMenu'))
+  },
+  {
     title: t('menuManager.permissionKey'),
     key: 'perms',
-    width: 180,
+    width: 220,
+    ellipsis: { tooltip: true },
     render: (row) => row.perms || '-'
   },
   {
     title: t('menuManager.routePath'),
     key: 'path',
-    width: 120,
+    width: 180,
+    ellipsis: { tooltip: true },
     render: (row) => row.path || '-'
   },
   { title: t('menuManager.sort'), key: 'sort', width: 80 },
   {
     title: t('common.actions'),
     key: 'actions',
-    width: 180,
+    width: 160,
+    align: 'center',
+    fixed: 'right',
     render: (row) =>
-      h('div', { class: 'flex gap-2' }, [
+      h('div', { class: 'admin-table-actions' }, [
         h(
           NButton,
           {
             size: 'small',
+            style: store.hasPerm('sys:menu:update') ? '' : 'display:none',
             onClick: () => openEditModal(row)
           },
           () => t('common.edit')
@@ -174,6 +272,7 @@ const columns = computed(() => [
           {
             size: 'small',
             type: 'error',
+            style: store.hasPerm('sys:menu:delete') ? '' : 'display:none',
             onClick: () => handleDelete(row)
           },
           () => t('common.delete')
@@ -182,19 +281,39 @@ const columns = computed(() => [
   }
 ])
 
-const fetchMenus = async () => {
+const tableScrollX = computed(() =>
+  columns.value.reduce((total, column) => total + Number(column.width || column.minWidth || 160), 0)
+)
+
+const fetchAllMenus = async () => {
+  tableLoading.value = true
   try {
-    menus.value = await request('/menus/list')
+    allMenus.value = await request('/menus/list')
   } catch (error) {
     message.error(t('menuManager.fetchMenusFailed'))
+  } finally {
+    tableLoading.value = false
   }
+}
+
+const refreshMenus = async () => {
+  await fetchAllMenus()
+}
+
+const handleQuery = async () => {
+  await refreshMenus()
+}
+
+const handleReset = async () => {
+  filters.value.keyword = ''
+  await refreshMenus()
 }
 
 const handleSubmit = () => {
   formRef.value?.validate(async (errors) => {
     if (errors) return
 
-    loading.value = true
+    saving.value = true
     try {
       if (isEdit.value) {
         await request(`/menus/${editingId.value}`, {
@@ -211,11 +330,11 @@ const handleSubmit = () => {
       }
       showModal.value = false
       formModel.value = { ...defaultForm }
-      await fetchMenus()
+      await refreshMenus()
     } catch (error) {
       message.error(isEdit.value ? t('menuManager.updateFailed') : t('menuManager.addFailed'))
     } finally {
-      loading.value = false
+      saving.value = false
     }
   })
 }
@@ -236,7 +355,7 @@ const handleDelete = async (menu) => {
   try {
     await request(`/menus/${menu.id}`, { method: 'DELETE' })
     message.success(t('menuManager.deleteSuccess'))
-    await fetchMenus()
+    await refreshMenus()
   } catch (error) {
     message.error(error.message || t('menuManager.deleteFailed'))
   }
@@ -249,5 +368,7 @@ const openAddModal = () => {
   showModal.value = true
 }
 
-onMounted(fetchMenus)
+onMounted(async () => {
+  await refreshMenus()
+})
 </script>

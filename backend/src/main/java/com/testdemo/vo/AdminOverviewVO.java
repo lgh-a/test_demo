@@ -6,6 +6,7 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class AdminOverviewVO {
+    private long totalGames;
     private long totalUsers;
     private long enabledUsers;
     private long totalRoles;

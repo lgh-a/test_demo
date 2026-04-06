@@ -1,44 +1,57 @@
 <template>
-  <n-config-provider :theme="darkTheme" :locale="naiveLocale" :date-locale="naiveDateLocale">
+  <n-config-provider :theme="naiveTheme" :locale="naiveLocale" :date-locale="naiveDateLocale">
     <n-message-provider>
-      <div class="min-h-screen flex flex-col text-white">
-        <header class="h-14 flex items-center justify-between px-6 bg-[#212126] shadow-sm">
-          <div class="text-xl font-bold cursor-pointer" @click="$router.push('/')">
-            {{ t('app.title') }}
-          </div>
+      <div :class="isAdminRoute ? 'app-shell flex h-screen flex-col overflow-hidden' : 'app-shell flex min-h-screen flex-col'">
+        <header class="app-header h-14 px-4 sm:px-6">
+          <div class="flex h-full items-center justify-between gap-4">
+            <div class="app-brand" @click="$router.push('/')">
+              {{ t('app.title') }}
+            </div>
 
-          <div class="flex items-center gap-4">
-            <n-select
-              :value="locale"
-              :options="localeOptions"
-              size="small"
-              class="w-28"
-              @update:value="setLocale"
-            />
-            <template v-if="store.isLoggedIn">
-              <span class="text-sm">{{ t('app.welcome', { username: store.userInfo.username }) }}</span>
-              <n-button size="small" @click="$router.push('/favorites')">{{ t('app.favorites') }}</n-button>
-              <n-button size="small" @click="showChangePassword = true">{{ t('app.changePassword') }}</n-button>
-              <n-button
-                v-if="store.permissions.some((p) => p.startsWith('sys:'))"
-                size="small"
-                @click="$router.push('/admin')"
-              >
-                {{ t('app.admin') }}
+            <div class="flex items-center gap-2 sm:gap-3">
+              <n-button quaternary size="small" @click="toggleTheme">
+                {{ themeButtonLabel }}
               </n-button>
-              <n-button size="small" @click="handleLogout">{{ t('app.logout') }}</n-button>
-            </template>
+              <n-select
+                :value="locale"
+                :options="localeOptions"
+                size="small"
+                class="w-24 sm:w-28"
+                @update:value="setLocale"
+              />
+              <template v-if="store.isLoggedIn">
+                <span class="hidden text-sm text-[var(--app-text-muted)] lg:inline">
+                  {{ t('app.welcome', { username: store.userInfo.username }) }}
+                </span>
+                <n-button size="small" @click="$router.push('/favorites')">{{ t('app.favorites') }}</n-button>
+                <n-button size="small" @click="showChangePassword = true">{{ t('app.changePassword') }}</n-button>
+                <n-button
+                  v-if="store.permissions.some((p) => p.startsWith('sys:'))"
+                  size="small"
+                  @click="$router.push('/admin')"
+                >
+                  {{ t('app.admin') }}
+                </n-button>
+                <n-button size="small" @click="handleLogout">{{ t('app.logout') }}</n-button>
+              </template>
 
-            <n-button v-else type="primary" size="small" @click="showLogin = true">
-              {{ t('app.login') }}
-            </n-button>
+              <n-button v-else type="primary" size="small" @click="showLogin = true">
+                {{ t('app.login') }}
+              </n-button>
+            </div>
           </div>
         </header>
 
-        <main class="flex-1 overflow-auto p-6 max-w-7xl mx-auto w-full">
+        <main
+          :class="
+            isAdminRoute
+              ? 'app-main-admin flex-1 min-h-0 w-full overflow-hidden'
+              : 'app-main-shell flex-1 w-full'
+          "
+        >
           <div
             v-if="!store.authReady"
-            class="flex min-h-[calc(100vh-8rem)] items-center justify-center text-sm text-gray-300"
+            class="flex min-h-[calc(100vh-8rem)] items-center justify-center text-sm text-[var(--app-text-muted)]"
           >
             {{ t('app.restoringSession') }}
           </div>
@@ -71,6 +84,7 @@ import LoginModal from './components/LoginModal.vue'
 import ChangePasswordModal from './components/ChangePasswordModal.vue'
 import { request } from './api/request'
 import { useI18n } from './i18n'
+import { useTheme } from './composables/useTheme'
 
 const store = useAppStore()
 const route = useRoute()
@@ -79,9 +93,18 @@ const { message } = createDiscreteApi(['message'])
 const showLogin = ref(false)
 const showChangePassword = ref(false)
 const { locale, localeOptions, setLocale, t, isZh } = useI18n()
+const { isDark, toggleTheme } = useTheme()
 
 const naiveLocale = computed(() => (isZh.value ? zhCN : enUS))
 const naiveDateLocale = computed(() => (isZh.value ? dateZhCN : undefined))
+const naiveTheme = computed(() => (isDark.value ? darkTheme : null))
+const isAdminRoute = computed(() => route.path.startsWith('/admin'))
+const themeButtonLabel = computed(() => {
+  if (isZh.value) {
+    return isDark.value ? '黑夜' : '白天'
+  }
+  return isDark.value ? 'Dark' : 'Light'
+})
 
 watch(
   () => [route.query.login, store.authReady, store.isLoggedIn],
@@ -99,6 +122,21 @@ watch(
     if (isLoggedIn && route.query.login === '1') {
       const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
       router.replace(redirect)
+    }
+  }
+)
+
+watch(
+  () => showLogin.value,
+  (visible) => {
+    if (!visible && !store.isLoggedIn && route.query.login === '1') {
+      const nextQuery = { ...route.query }
+      delete nextQuery.login
+      delete nextQuery.redirect
+      router.replace({
+        path: route.path,
+        query: nextQuery
+      })
     }
   }
 )

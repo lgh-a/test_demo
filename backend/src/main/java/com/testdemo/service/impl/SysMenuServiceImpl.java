@@ -1,6 +1,8 @@
 package com.testdemo.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.testdemo.common.OperationResult;
 import com.testdemo.dto.MenuSaveRequest;
 import com.testdemo.entity.SysMenu;
@@ -34,6 +36,21 @@ public class SysMenuServiceImpl implements SysMenuService {
     @Override
     public List<SysMenu> listMenus() {
         return sysMenuMapper.selectList(new LambdaQueryWrapper<SysMenu>().orderByAsc(SysMenu::getSort, SysMenu::getId));
+    }
+
+    @Override
+    public IPage<SysMenu> pageMenus(int current, int size, String keyword) {
+        LambdaQueryWrapper<SysMenu> queryWrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(keyword)) {
+            String normalizedKeyword = keyword.trim();
+            queryWrapper.and(wrapper -> wrapper.like(SysMenu::getName, normalizedKeyword)
+                    .or()
+                    .like(SysMenu::getPerms, normalizedKeyword)
+                    .or()
+                    .like(SysMenu::getPath, normalizedKeyword));
+        }
+        queryWrapper.orderByAsc(SysMenu::getSort).orderByAsc(SysMenu::getId);
+        return sysMenuMapper.selectPage(new Page<>(Math.max(current, 1), Math.max(size, 1)), queryWrapper);
     }
 
     @Override
