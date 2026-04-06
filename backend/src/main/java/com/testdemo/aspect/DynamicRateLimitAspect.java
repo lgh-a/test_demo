@@ -78,14 +78,20 @@ public class DynamicRateLimitAspect {
 
         // 第三步：判断是否登录
         boolean isLogin = StpUtil.isLogin();
+        RateLimitRule dynamicRule = null;
+        LimitType finalLimitType = dynamicRateLimit.limitType();
 
         // 第四步：获取限流阈值（区分游客和登录用户）
         int finalCapacity;
         int finalRate;
 
         if (StringUtils.hasText(dynamicRateLimit.configKey())) {
-            RateLimitRule dynamicRule = ruleManager.getRule(dynamicRateLimit.configKey());
+            dynamicRule = ruleManager.getRule(dynamicRateLimit.configKey());
             if (dynamicRule != null && dynamicRule.getStatus() == 1) {
+                LimitType dynamicLimitType = LimitType.resolve(dynamicRule.getLimitType());
+                if (dynamicLimitType != null) {
+                    finalLimitType = dynamicLimitType;
+                }
                 if (isLogin) {
                     // 登录用户使用正式规则
                     finalCapacity = dynamicRule.getCapacity() != null
@@ -121,15 +127,12 @@ public class DynamicRateLimitAspect {
 
         // 第六步：根据策略类型执行不同的限流逻辑
         Long result;
-        if (dynamicRateLimit.limitType() == LimitType.FIXED_WINDOW_DAILY) {
+        if (finalLimitType == LimitType.FIXED_WINDOW_DAILY) {
             // 每日固定窗口策略：key 格式为 baseKey:动态维度:日期:v版本号
             String date = LocalDate.now().toString();
             int version = 1;
-            if (StringUtils.hasText(dynamicRateLimit.configKey())) {
-                RateLimitRule dynamicRule = ruleManager.getRule(dynamicRateLimit.configKey());
-                if (dynamicRule != null && dynamicRule.getVersion() != null) {
-                    version = dynamicRule.getVersion();
-                }
+            if (dynamicRule != null && dynamicRule.getVersion() != null) {
+                version = dynamicRule.getVersion();
             }
             finalKey = finalKey + ":" + date + ":v" + version;
 

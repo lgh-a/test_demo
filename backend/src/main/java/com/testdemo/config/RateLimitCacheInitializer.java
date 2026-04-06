@@ -17,6 +17,7 @@ public class RateLimitCacheInitializer implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(RateLimitCacheInitializer.class);
 
+    private final RateLimitAnnotationSynchronizer rateLimitAnnotationSynchronizer;
     private final RateLimitRuleService rateLimitRuleService;
     private final RateLimitRuleManager rateLimitRuleManager;
 
@@ -24,6 +25,7 @@ public class RateLimitCacheInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         log.info("Initializing rate limit rule cache");
         try {
+            rateLimitAnnotationSynchronizer.syncAnnotatedRules();
             List<RateLimitRule> rules = rateLimitRuleService.listEnabled();
             rateLimitRuleManager.refreshAllCache(rules);
             log.info("Rate limit rule cache initialized with {} enabled rules", rules.size());

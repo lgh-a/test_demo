@@ -65,6 +65,12 @@
         <n-form-item :label="t('rateLimit.strategy')" path="limitType">
           <n-select v-model:value="formModel.limitType" :options="limitTypeOptions" />
         </n-form-item>
+        <n-form-item v-if="isEdit && formModel.limitType === 'FIXED_WINDOW_DAILY'" :label="t('rateLimit.resetTodayCount')">
+          <n-switch v-model:value="formModel.resetCurrentWindow">
+            <template #checked>{{ t('common.yes') }}</template>
+            <template #unchecked>{{ t('common.no') }}</template>
+          </n-switch>
+        </n-form-item>
         <n-divider>{{ t('rateLimit.loggedInConfig') }}</n-divider>
         <n-grid :cols="2" :x-gap="16">
           <n-gi>
@@ -162,7 +168,7 @@ const statusOptions = computed(() => [
 
 const limitTypeOptions = computed(() => [
   { label: `${t('rateLimit.tokenBucket')} (TOKEN_BUCKET)`, value: 'TOKEN_BUCKET' },
-  { label: `${t('rateLimit.flexibleDaily')} (FLEXIBLE)`, value: 'FLEXIBLE' }
+  { label: `${t('rateLimit.flexibleDaily')} (FIXED_WINDOW_DAILY)`, value: 'FIXED_WINDOW_DAILY' }
 ])
 
 const defaultForm = {
@@ -170,6 +176,7 @@ const defaultForm = {
   name: '',
   description: '',
   limitType: 'TOKEN_BUCKET',
+  resetCurrentWindow: false,
   capacity: 10,
   rate: 1,
   guestCapacity: 5,
@@ -269,6 +276,8 @@ const tableScrollX = computed(() =>
   columns.value.reduce((total, column) => total + Number(column.width || column.minWidth || 160), 0)
 )
 
+const normalizeLimitType = (limitType) => (limitType === 'FLEXIBLE' ? 'FIXED_WINDOW_DAILY' : (limitType || 'TOKEN_BUCKET'))
+
 const formatTime = (time) => {
   if (!time) return '-'
   return time.replace('T', ' ').substring(0, 19)
@@ -285,7 +294,9 @@ const fetchRules = async () => {
     if (searchStatus.value !== null) params.append('status', String(searchStatus.value))
 
     const data = await request(`/rate-limit/rules/page?${params.toString()}`)
-    ruleList.value = Array.isArray(data.records) ? data.records : []
+    ruleList.value = Array.isArray(data.records)
+      ? data.records.map((item) => ({ ...item, limitType: normalizeLimitType(item.limitType) }))
+      : []
     pagination.pages = Number(data.pages || 1)
     pagination.total = Number(data.total || 0)
   } catch (error) {
@@ -325,7 +336,12 @@ const openEditModal = async (rule) => {
   editingId.value = rule.id
   try {
     const data = await request(`/rate-limit/rules/${rule.id}`)
-    formModel.value = { ...defaultForm, ...data }
+    formModel.value = {
+      ...defaultForm,
+      ...data,
+      resetCurrentWindow: false,
+      limitType: normalizeLimitType(data.limitType)
+    }
     showModal.value = true
   } catch (error) {
     message.error(t('rateLimit.fetchRuleDetailFailed'))
@@ -338,16 +354,22 @@ const handleSubmit = () => {
 
     loading.value = true
     try {
+      const payload = {
+        ...formModel.value,
+        limitType: normalizeLimitType(formModel.value.limitType),
+        resetCurrentWindow: Boolean(formModel.value.resetCurrentWindow)
+      }
       if (isEdit.value) {
         await request('/rate-limit/rules', {
           method: 'PUT',
-          body: JSON.stringify(formModel.value)
+          body: JSON.stringify(payload)
         })
         message.success(t('rateLimit.updateRuleSuccess'))
       } else {
+        delete payload.resetCurrentWindow
         await request('/rate-limit/rules', {
           method: 'POST',
-          body: JSON.stringify(formModel.value)
+          body: JSON.stringify(payload)
         })
         message.success(t('rateLimit.addRuleSuccess'))
       }

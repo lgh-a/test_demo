@@ -10,4 +10,6 @@ public class RateLimitRuleUpdateRequest extends RateLimitRuleCreateRequest {
 
     @NotNull(message = "id is required")
     private Long id;
+
+    private Boolean resetCurrentWindow;
 }

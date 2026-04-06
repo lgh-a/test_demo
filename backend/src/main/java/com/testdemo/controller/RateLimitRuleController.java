@@ -80,13 +80,14 @@ public class RateLimitRuleController {
     @SaCheckPermission("rate-limit:rule:add")
     @Operation(summary = "Create rate limit rule")
     public Result<?> add(@Valid @RequestBody RateLimitRuleCreateRequest request) {
-        if (!isSupportedLimitType(request.getLimitType())) {
+        LimitType limitType = resolveLimitType(request.getLimitType());
+        if (limitType == null) {
             throw new BusinessException(HttpStatus.BAD_REQUEST, "Unsupported limitType");
         }
         if (rateLimitRuleService.getByConfigKey(request.getConfigKey().trim()) != null) {
             throw new BusinessException(HttpStatus.CONFLICT, "configKey already exists");
         }
-        boolean success = rateLimitRuleService.addRule(toEntity(request));
+        boolean success = rateLimitRuleService.addRule(toEntity(request, limitType));
         if (!success) {
             throw new BusinessException(HttpStatus.INTERNAL_SERVER_ERROR, "Create failed");
         }
@@ -97,7 +98,8 @@ public class RateLimitRuleController {
     @SaCheckPermission("rate-limit:rule:edit")
     @Operation(summary = "Update rate limit rule")
     public Result<?> update(@Valid @RequestBody RateLimitRuleUpdateRequest request) {
-        if (!isSupportedLimitType(request.getLimitType())) {
+        LimitType limitType = resolveLimitType(request.getLimitType());
+        if (limitType == null) {
             throw new BusinessException(HttpStatus.BAD_REQUEST, "Unsupported limitType");
         }
         RateLimitRule existing = rateLimitRuleService.getById(request.getId());
@@ -108,8 +110,9 @@ public class RateLimitRuleController {
         if (sameConfigKeyRule != null && !sameConfigKeyRule.getId().equals(request.getId())) {
             throw new BusinessException(HttpStatus.CONFLICT, "configKey already exists");
         }
-        RateLimitRule rule = toEntity(request);
+        RateLimitRule rule = toEntity(request, limitType);
         rule.setId(request.getId());
+        rule.setVersion(resolveRuleVersion(existing, request));
         boolean success = rateLimitRuleService.updateRule(rule);
         if (!success) {
             throw new BusinessException(HttpStatus.INTERNAL_SERVER_ERROR, "Update failed");
@@ -137,12 +140,12 @@ public class RateLimitRuleController {
         return Result.success("Refreshed " + rules.size() + " rules to cache");
     }
 
-    private RateLimitRule toEntity(RateLimitRuleCreateRequest request) {
+    private RateLimitRule toEntity(RateLimitRuleCreateRequest request, LimitType limitType) {
         RateLimitRule rule = new RateLimitRule();
         rule.setConfigKey(request.getConfigKey().trim());
         rule.setName(trimToNull(request.getName()));
         rule.setDescription(trimToNull(request.getDescription()));
-        rule.setLimitType(request.getLimitType().trim());
+        rule.setLimitType(limitType.name());
         rule.setCapacity(request.getCapacity());
         rule.setRate(request.getRate());
         rule.setGuestCapacity(request.getGuestCapacity());
@@ -159,16 +162,15 @@ public class RateLimitRuleController {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
-    private boolean isSupportedLimitType(String limitType) {
-        if (limitType == null) {
-            return false;
+    private LimitType resolveLimitType(String limitType) {
+        return LimitType.resolve(limitType);
+    }
+
+    private Integer resolveRuleVersion(RateLimitRule existing, RateLimitRuleUpdateRequest request) {
+        Integer currentVersion = existing.getVersion() != null ? existing.getVersion() : 1;
+        if (Boolean.TRUE.equals(request.getResetCurrentWindow())) {
+            return currentVersion + 1;
         }
-        String normalized = limitType.trim();
-        for (LimitType value : LimitType.values()) {
-            if (value.name().equals(normalized)) {
-                return true;
-            }
-        }
-        return false;
+        return currentVersion;
     }
 }

@@ -41,4 +41,6 @@ public interface RateLimitRuleService {
      * 获取启用的规则列表（供缓存预热）
      */
     List<RateLimitRule> listEnabled();
+
+    boolean syncAnnotatedRule(RateLimitRule rule);
 }
